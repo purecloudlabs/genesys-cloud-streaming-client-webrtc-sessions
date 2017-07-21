@@ -15,11 +15,9 @@ const {
 } = require('../constants').exposeWebrtcEvents;
 
 const {
-  debug,
-  warn
-} = require('./logger');
-
-const guard = require('../utils').guard;
+  logger,
+  guard
+} = require('../utils');
 
 function prepareSession (options) {
   options.signalEndOfCandidates = options.signalEndOfCandidates || true;
@@ -51,7 +49,6 @@ function prepareSession (options) {
 }
 
 class JingleSessionManager extends WildEmitter {
-
   constructor () {
     super();
     this.iceServers = [ 'foobar' ];
@@ -135,7 +132,7 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       createRtcSession: function ({jid, sid, stream, peerConstraints, peerConnectionConstraints}) {
-        debug('video', 'startVideoChat', jid);
+        logger.debug('video', 'startVideoChat', jid);
 
         peerConstraints = peerConstraints || { offerToReceiveAudio: true, offerToReceiveVideo: true };
 
@@ -224,7 +221,7 @@ class JingleSessionManager extends WildEmitter {
           // TODO: remove if-block after PCDWEBK-3533 (realtime and web-directory) has been merged and shipped to all environments
           // and after web-directory has removed their use of "oneToOneJid"
           if (opts.oneToOneJid) {
-            warn('use of oneToOneJid with endRtcSessions is deprecated. please use "opts.jid"');
+            logger.warn('use of oneToOneJid with endRtcSessions is deprecated. please use "opts.jid"');
           }
 
           this.handleEndRtcSessionsWithJid({jid, reason});
@@ -386,11 +383,11 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       jingleMessageInit: function (stanza) {
-        // var fromJid, ref, ref1, session;
-        // session = jingleStanza.getData(stanza).toJSON();
-        // if (session.from.bare === this.server.jid.bare().toString()) {
-        //   return;
-        // }
+        let fromJid, ref, ref1, session;
+        session = jingleStanza.getData(stanza).toJSON();
+        if (session.from.bare === this.server.jid.bare().toString()) {
+          return;
+        }
         // if (stanza.attrs.ofrom) {
         //   fromJid = new xmpp.JID(stanza.attrs.ofrom);
         //   if (fromJid.bare().toString() === this.server.jid.bare().toString()) {
@@ -398,15 +395,15 @@ class JingleSessionManager extends WildEmitter {
         //   }
         //   session.from = fromJid.toString();
         // }
-        // this.pendingSessions[session.propose.id] = session;
-        // return this.emit('requestIncomingRtcSession', {
-        //   sessionId: session.propose.id,
-        //   conversationId: stanza.getChild('propose').attrs['inin-cid'],
-        //   autoAnswer: stanza.getChild('propose').attrs['inin-autoanswer'] === 'true',
-        //   persistentConnectionId: stanza.getChild('propose').attrs['inin-persistent-cid'],
-        //   roomJid: ((ref = session.ofrom) != null ? ref.full : void 0) || session.ofrom || ((ref1 = session.from) != null ? ref1.full : void 0) || session.from,
-        //   fromJid: session.from.full || session.from
-        // });
+        this.pendingSessions[session.propose.id] = session;
+        return this.emit('requestIncomingRtcSession', {
+          sessionId: session.propose.id,
+          conversationId: stanza.getChild('propose').attrs['inin-cid'],
+          autoAnswer: stanza.getChild('propose').attrs['inin-autoanswer'] === 'true',
+          persistentConnectionId: stanza.getChild('propose').attrs['inin-persistent-cid'],
+          roomJid: ((ref = session.ofrom) != null ? ref.full : void 0) || session.ofrom || ((ref1 = session.from) != null ? ref1.full : void 0) || session.from,
+          fromJid: session.from.full || session.from
+        });
       }.bind(this),
 
       jingleMessageRetract: function (stanza) {
