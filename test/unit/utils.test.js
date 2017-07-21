@@ -1,29 +1,48 @@
 'use strict';
 
 const test = require('ava');
+const sinon = require('sinon');
 
-test('bareJid should return the bareJid', t => {
-  const stanzaio = {
-    jid: {
-      bare: String.prototype.toString.call('user@example.com')
-    }
-  };
-  const bareJid = require('../../utils').bareJid;
-  const actual = bareJid(stanzaio);
-  const expected = 'user@example.com';
-  t.is(actual, expected);
+const {
+  logger,
+  guard
+} = require('../../utils');
+
+let sandbox;
+test.beforeEach(() => {
+  sandbox = sinon.sandbox.create();
+  sandbox.stub(logger, 'debug');
+  sandbox.stub(logger, 'warn');
+  sandbox.stub(logger, 'error');
+  sandbox.stub(logger, 'info');
 });
 
-test('guard should return undefined if value is undefined', t => {
-  const guard = require('../../utils').guard;
-  const actual = guard(undefined);
-  const expected = undefined;
-  t.is(actual, expected);
+test.afterEach(() => {
+  sandbox.restore();
+});
+
+test('debug should print debug level information to the console', t => {
+  logger.debug('I am some debugging information');
+  t.is(logger.debug.called, true);
+});
+
+test('warn should print warning level information to the console', t => {
+  logger.warn('A warning has been issued');
+  t.is(logger.warn.called, true);
+});
+
+test('error should print error level information to the console', t => {
+  logger.error('An error has been logged');
+  t.is(logger.error.called, true);
+});
+
+test('info should print info level information to the console', t => {
+  logger.info('An info level log has been issued');
+  t.is(logger.info.called, true);
 });
 
 test('guard should return a value if there is a value and it is not null', t => {
   t.plan(2);
-  const guard = require('../../utils').guard;
   const actual = guard(
     {
       jid: 'myuniquejid@somebody.com'
