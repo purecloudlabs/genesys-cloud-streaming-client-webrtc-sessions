@@ -1,6 +1,6 @@
 'use strict';
 
-const exposeWebrtcEvents = {
+const constants = {
   events: {
     REQUEST_WEBRTC_DUMP: 'requestWebrtcDump', // dump triggered by someone in room
 
@@ -42,6 +42,4 @@ const exposeWebrtcEvents = {
   }
 };
 
-module.exports = {
-  exposeWebrtcEvents
-};
+module.exports = constants;

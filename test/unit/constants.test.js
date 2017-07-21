@@ -1,10 +1,11 @@
 'use strict';
 
 const test = require('ava');
+const constants = require('../../constants');
 
 test('events object should render proper labels', t => {
   t.plan(14);
-  let events = require('../../constants').exposeWebrtcEvents.events;
+  let events = constants.events;
   events = Object.keys(events).map((event, index) => {
     return {
       event: events[event]
@@ -35,7 +36,7 @@ test('events object should render proper labels', t => {
 
 test('labels object should render proper labels', t => {
   t.plan(1);
-  let labels = require('../../constants').exposeWebrtcEvents.labels;
+  let labels = constants.labels;
   labels = Object.keys(labels).map(label => {
     return {
       indicatorLabel: labels[label]
@@ -53,7 +54,7 @@ test('labels object should render proper labels', t => {
 
 test('stanzaEvents should render proper events', t => {
   t.plan(7);
-  let stanzaEvents = require('../../constants').exposeWebrtcEvents.stanzaEvents;
+  let stanzaEvents = constants.stanzaEvents;
   stanzaEvents = Object.keys(stanzaEvents).map(event => {
     return {
       event: stanzaEvents[event]
@@ -75,7 +76,7 @@ test('stanzaEvents should render proper events', t => {
 
 test('stanzaTypes should render proper types', t => {
   t.plan(3);
-  let stanzaTypes = require('../../constants').exposeWebrtcEvents.stanzaTypes;
+  let stanzaTypes = constants.stanzaTypes;
   stanzaTypes = Object.keys(stanzaTypes).map(type => {
     return {
       types: stanzaTypes[type]
