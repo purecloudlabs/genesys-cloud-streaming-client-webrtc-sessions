@@ -1,0 +1,69 @@
+{
+  "name": "firehose-webrtc-sessions",
+  "version": "1.0.0",
+  "description": "Firehose Webrtc Session API",
+  "main": "index.js",
+  "scripts": {
+    "unit-test": "nyc ava test/unit/*.js",
+    "test": "npm run semistandard && npm run unit-test",
+    "semistandard": "semistandard",
+    "semistandard:fix": "semistandard --fix"
+  },
+  "semistandard": {
+    "ignore": [
+      "/.nyc_output",
+      "/coverage",
+      "/scripts"
+    ]
+  },
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  },
+  "ava": {
+    "files": [],
+    "concurrency": 5,
+    "failFast": true,
+    "failWithoutAssertions": false,
+    "tap": true,
+    "powerAssert": true,
+    "require": [
+      "babel-register",
+      "./test/helpers/setup-browser-env.js"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://bitbucket.org/inindca/firehose-webrtc-sessions.git"
+  },
+  "keywords": [
+    "jingle",
+    "xmpp",
+    "firehose"
+  ],
+  "publishConfig": {
+    "registry": "https://purecloud.artifactoryonline.com/purecloud/api/npm/inin-internal-npm-dev/"
+  },
+  "author": "Xander Dumaine, Jean-Marcel Belmont",
+  "license": "MIT",
+  "homepage": "https://bitbucket.org/inindca/firehose-webrtc-sessions#readme",
+  "dependencies": {
+    "jingle-media-data-session-purecloud": "^3.0.0",
+    "jingle-media-session-purecloud": "^3.0.0",
+    "jingle-stanza": "^2.0.2",
+    "limiter": "^1.1.2",
+    "stanza.io": "^8.4.3",
+    "uuid": "^3.1.0",
+    "wildemitter": "^1.2.0"
+  },
+  "devDependencies": {
+    "ava": "^0.21.0",
+    "babel-core": "^6.25.0",
+    "babel-preset-es2015": "^6.24.1",
+    "browser-env": "^3.1.0",
+    "nyc": "^11.0.3",
+    "semistandard": "^11.0.0",
+    "sinon": "^2.3.8"
+  }
+}

@@ -1,29 +1,23 @@
-# README #
+# Firehose Webrtc Sessions
 
-This README would normally document whatever steps are necessary to get your application up and running.
+## Overview
 
-### What is this repository for? ###
+This library exposes API methods and emits events for firehose-client to consume
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+## Installation
 
-### How do I get set up? ###
+Run `npm install` to get all the dependencies set up
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+## Testing
 
-### Contribution guidelines ###
+Run all the tests by using the script `npm test` in the command line
 
-* Writing tests
-* Code review
-* Other guidelines
+* In order to run just a single test file do the following
+  * `./node_modules/.bin/ava test/unit/someTest.test.js`
 
-### Who do I talk to? ###
 
-* Repo owner or admin
-* Other community or team contact
+## Linting and Style
+
+semistandard is being used as the linter and use the script `npm run lint` if you want to lint the code base
+
+**Set up linting in your editor so you get realtime linting on save**
