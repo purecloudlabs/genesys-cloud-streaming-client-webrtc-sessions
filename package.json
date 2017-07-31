@@ -4,8 +4,9 @@
   "description": "Firehose Webrtc Session API",
   "main": "src/index.js",
   "scripts": {
-    "unit-test": "nyc ava test/unit/*.js",
-    "test": "npm run semistandard && npm run unit-test",
+    "unit-test": "nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
+    "test": "npm run semistandard && npm run unit-test && npm run report",
+    "report": "nyc report",
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix"
   },
