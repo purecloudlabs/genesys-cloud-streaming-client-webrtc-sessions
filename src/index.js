@@ -329,14 +329,25 @@ class JingleSessionManager extends WildEmitter {
   // these are functions to check each stanza and return a predicate (A function that evaluates to true/false)
   get stanzaCheckers () {
     return {
+      // https://xmpp.org/extensions/xep-0166.html
+      jingle: stanza => {
+        const isIQ = stanza._name === 'iq';
+        return isIQ && (
+          (stanza.type === 'set' && stanza.jingle) ||
+          (stanza.type === 'result' && stanza.xml.children.length === 0) || // todo: better way?
+          (stanza.type === 'error' && stanza.error)
+        );
+      },
       requestWebRtcDump: stanza => {
         const isIQ = stanza._name === 'iq';
         return isIQ && stanza.services && stanza.type === 'get' && stanza.kind === 'webrtcDump';
       },
-      iceServers: (stanza) => {
+      iceServers: stanza => {
         const isIQ = stanza._name === 'iq';
         return isIQ && stanza.services && ['set', 'result'].includes(stanza.type);
       },
+
+      // https://xmpp.org/extensions/xep-0353.html
       jingleMessageInit: stanza => {
         const isMessage = stanza._name === 'message';
         return isMessage && stanza.services && stanza.type === 'propose';
@@ -360,10 +371,11 @@ class JingleSessionManager extends WildEmitter {
 
       // todo this is realtime specific, might not go in firehose
       upgradeError: stanza => {
-        const ref = this.jid;
-        const refFrom = stanza.from;
         const isPresence = stanza._name === 'presence';
-        return isPresence && stanza.type === 'error' && stanza.attrs.originalType === 'upgradeMedia' && stanza.to === (ref != null ? ref.toString() : void 0) && (refFrom != null ? refFrom.match(/@conference/) : void 0);
+        return isPresence && stanza.type === 'error' &&
+            stanza.originalType === 'upgradeMedia' &&
+            stanza.to.toString() === this.jid.toString() &&
+            stanza.from.match(/@conference/);
       }
     };
   }
@@ -371,6 +383,22 @@ class JingleSessionManager extends WildEmitter {
   // these are the functions to handle each stanza that should be handled
   get stanzaHandlers () {
     return {
+      jingle: function (stanza) {
+        if (['result', 'error'].includes(stanza.type)) {
+          const pendingIq = this.pendingIqs[stanza.id];
+          if (pendingIq) {
+            // Workaround for https://github.com/otalk/jingle.js/issues/34
+            stanza.jingle = pendingIq.jingle;
+            delete this.pendingIqs[stanza.id];
+          } else {
+            return; // this is an error or result for a stanza we did not send
+          }
+
+          // the core of handling jingle stanzas is to feed them to jinglejs
+          this.jingleJs.process(stanza.toJSON()); // todo: do we need toJSON()?
+        }
+      }.bind(this),
+
       requestWebrtcDump: function (stanza) {
         return this.emit(
           events.REQUEST_WEBRTC_DUMP,
