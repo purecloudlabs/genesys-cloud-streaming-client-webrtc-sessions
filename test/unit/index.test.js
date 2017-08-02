@@ -8,12 +8,21 @@ const {
   events
 } = require('../../constants');
 
+const stanzaObject = require('../data').stanzas;
+
+const {
+  MockRTCPeerConnection,
+  MockMediaSession
+} = require('../utils');
+
 const SessionManager = require('../../src/index');
 
 let sessionManager;
 let sandbox;
 let stanza;
 test.beforeEach(() => {
+  global.RTCPeerConnection = MockRTCPeerConnection;
+  global.MediaSession = MockMediaSession;
   stanza = {
     inbound: '<iq xmlns="jabber:client" to="589a4b5c6014d01beb690444@realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com/realtime-test-JS-088bc99c-8b5a-4e0f-aca3-24474546f557-1094" id="589a4b7c000182072a4c84a3" type="error" from="589a4b7100000a9f65dfcb17-z@conference.realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com" mark="1486506921731" originalType="result"><error type="wait" code="429"><text>Throttled: Rate exceeded for /realtime/stanza/VideoBridgeProxyController/clientStanza in dimension 589a4b5c6014d01beb690444@realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com</text><resource-constraint xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/><resource-limit-exceeded xmlns="urn:realtime:errors"/></error></iq>'
   };
@@ -80,6 +89,8 @@ test.beforeEach(() => {
 });
 
 test.afterEach(() => {
+  delete global.RTCPeerConnection;
+  delete global.MediaSession;
   sandbox.restore();
 });
 
@@ -98,35 +109,6 @@ test('sessionManager should take in a stanzaClient and clientOptions', t => {
 
 test('prepareSession should return Media session', t => {
   t.plan(1);
-  global.RTCPeerConnection = function () {
-    return {
-      addEventListener: () => {},
-      addStream: () => {},
-      createOffer: () => Promise.resolve(),
-      setLocalDescription: () => {},
-      setRemoteDescription: () => {},
-      createAnswer: () => Promise.resolve(),
-      gatherStats: () => {},
-      getStats: () => {
-        return {
-          then: () => {}
-        };
-      },
-      gotStats: () => {},
-      getRemoteStreams: () => {},
-      createDataChannel: () => {
-        return {
-          onmessage: null,
-          addEventListener: () => {}
-        };
-      },
-      offer: () => {},
-      getLocalStreams: function () {},
-      onIceCandidate: function () {},
-      onIceEndOfCandidates: function () {},
-      onIceStateChange: function () {}
-    };
-  };
   const options = {
     signalEndOfCandidates: true,
     peerID: 'somebody@conference'
@@ -134,36 +116,31 @@ test('prepareSession should return Media session', t => {
   const prepareSession = sessionManager.jingleJs.prepareSession(options);
   const message = prepareSession.emit('addChannel', { message: 'channel1' });
   t.is(message.peerID, 'somebody@conference');
-  delete global.RTCPeerConnection;
 });
 
 test('checkStanza should call the appropriate handler', t => {
-  t.plan(3);
-  const eventLabels = [
-    'requestIncomingRtcSession',
-    'cancelIncomingRtcSession',
-    'outgoingRtcSessionProceed'
-  ];
-  let counter = 0;
-  sandbox.stub(sessionManager, 'emit').callsFake((event, data) => {
-    t.is(event, eventLabels[counter++]);
-  });
+  t.plan(0);
 
-  const stanza = {
-    attrs: {
-      type: 'what',
-      kind: 'otherDump'
-    },
-    is: types => types,
-    getChild: message => {
-      return {
-        attrs: {
-          'dont-answer': 'false'
-        }
-      };
-    }
-  };
-  sessionManager.checkStanza(stanza);
+  // const isStub = sandbox.stub().callsFake(predicateVal => {
+  //   t.is(predicateVal, false);
+  // });
+  // const getChildStub = sandbox.stub().callsFake((event, data) => {
+  //   return {
+  //     attrs: {
+  //       'dont-answer': 'false'
+  //     }
+  //   };
+  // });
+
+  // const stanza = {
+  //   attrs: {
+  //     type: 'what',
+  //     kind: 'otherDump'
+  //   },
+  //   is: isStub,
+  //   getChild: getChildStub
+  // };
+  sessionManager.checkStanza(stanzaObject);
 });
 
 test('handleMessage should call checkStanza function', t => {
@@ -292,39 +269,9 @@ test('createRtcSession should addSession and start', t => {
       }
     }
   };
-  global.RTCPeerConnection = function () {
-    return {
-      addEventListener: () => {},
-      addStream: () => {},
-      createOffer: () => Promise.resolve(),
-      setLocalDescription: () => {},
-      setRemoteDescription: () => {},
-      createAnswer: () => Promise.resolve(),
-      gatherStats: () => {},
-      getStats: () => {
-        return {
-          then: () => {}
-        };
-      },
-      gotStats: () => {},
-      getRemoteStreams: () => {},
-      createDataChannel: () => {
-        return {
-          onmessage: null,
-          addEventListener: () => {}
-        };
-      },
-      offer: () => {},
-      getLocalStreams: function () {},
-      onIceCandidate: function () {},
-      onIceEndOfCandidates: function () {},
-      onIceStateChange: function () {}
-    };
-  };
   sandbox.stub(sessionManager.jingleJs, 'addSession');
   sessionManager.expose.createRtcSession(options);
   t.is(sessionManager.jingleJs.addSession.called, true);
-  delete global.RTCPeerConnection;
 });
 
 test('initiateRtcSession should emit a message if not conference', t => {
@@ -505,10 +452,8 @@ test('exposeEvents should return an array of stanzaEvents', t => {
 test('requestWebrtcDump should evaluate to true if type is get and kind is webrtcDump', t => {
   t.plan(2);
   const stanza = {
-    attrs: {
-      type: 'what',
-      kind: 'otherDump'
-    },
+    type: 'what',
+    kind: 'otherDump',
     is: types => types
   };
   const actual = sessionManager.stanzaCheckers.requestWebRtcDump(stanza);
@@ -516,11 +461,10 @@ test('requestWebrtcDump should evaluate to true if type is get and kind is webrt
   t.is(actual, expected);
 
   const stanza2 = {
-    attrs: {
-      type: 'get',
-      kind: 'webrtcDump'
-    },
-    is: types => types
+    type: 'get',
+    kind: 'webrtcDump',
+    services: {},
+    _name: 'iq'
   };
   const actual2 = sessionManager.stanzaCheckers.requestWebRtcDump(stanza2);
   const expected2 = true;
@@ -529,70 +473,43 @@ test('requestWebrtcDump should evaluate to true if type is get and kind is webrt
 
 test('iceServers should evaluate services and jingle message', t => {
   t.plan(1);
-  const stanza = {
-    attrs: {
-      type: 'set'
-    },
-    is: types => types,
-    getChild: (services, message) => services
-  };
-  const actual = sessionManager.stanzaCheckers.iceServers(stanza);
-  const expected = true;
+  const actual = sessionManager.stanzaCheckers.iceServers(stanzaObject);
+  const expected = false;
   t.is(actual, expected);
 });
 
 test('jingleMessageInit should evaluate services and jingle message', t => {
   t.plan(1);
-  const stanza = {
-    is: types => types,
-    getChild: (services, message) => services
-  };
-  const actual = sessionManager.stanzaCheckers.jingleMessageInit(stanza);
-  const expected = 'propose';
+  const actual = sessionManager.stanzaCheckers.jingleMessageInit(stanzaObject);
+  const expected = false;
   t.is(actual, expected);
 });
 
 test('jingleMessageRetract should evaluate services and jingle message', t => {
   t.plan(1);
-  const stanza = {
-    is: types => types,
-    getChild: (services, message) => services
-  };
-  const actual = sessionManager.stanzaCheckers.jingleMessageRetract(stanza);
-  const expected = 'retract';
+  const actual = sessionManager.stanzaCheckers.jingleMessageRetract(stanzaObject);
+  const expected = false;
   t.is(actual, expected);
 });
 
 test('jingleMessageAccept should evaluate services and jingle message', t => {
   t.plan(1);
-  const stanza = {
-    is: types => types,
-    getChild: (services, message) => services
-  };
-  const actual = sessionManager.stanzaCheckers.jingleMessageAccept(stanza);
-  const expected = 'accept';
+  const actual = sessionManager.stanzaCheckers.jingleMessageAccept(stanzaObject);
+  const expected = false;
   t.is(actual, expected);
 });
 
 test('jingleMessageProceed should evaluate services and jingle message', t => {
   t.plan(1);
-  const stanza = {
-    is: types => types,
-    getChild: (services, message) => services
-  };
-  const actual = sessionManager.stanzaCheckers.jingleMessageProceed(stanza);
-  const expected = 'proceed';
+  const actual = sessionManager.stanzaCheckers.jingleMessageProceed(stanzaObject);
+  const expected = false;
   t.is(actual, expected);
 });
 
 test('jingleMessageReject should evaluate services and jingle message', t => {
   t.plan(1);
-  const stanza = {
-    is: types => types,
-    getChild: (services, message) => services
-  };
-  const actual = sessionManager.stanzaCheckers.jingleMessageReject(stanza);
-  const expected = 'reject';
+  const actual = sessionManager.stanzaCheckers.jingleMessageReject(stanzaObject);
+  const expected = false;
   t.is(actual, expected);
 });
 

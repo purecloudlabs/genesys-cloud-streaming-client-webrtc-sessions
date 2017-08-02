@@ -10,9 +10,7 @@ const Jingle = require('jingle-purecloud');
 const {
   events,
   labels,
-  stanzaTypes,
-  stanzaEvents,
-  stanzaNamespaces
+  stanzaEvents
 } = require('../constants');
 
 const guard = require('../utils').guard;
@@ -332,33 +330,40 @@ class JingleSessionManager extends WildEmitter {
   get stanzaCheckers () {
     return {
       requestWebRtcDump: stanza => {
-        return stanza.is(stanzaTypes.IQ) && stanza.attrs.type === 'get' && stanza.attrs.kind === 'webrtcDump';
+        const isIQ = stanza._name === 'iq';
+        return isIQ && stanza.services && stanza.type === 'get' && stanza.kind === 'webrtcDump';
       },
       iceServers: (stanza) => {
-        const ref = stanza.attrs.type;
-        return stanza.is(stanzaTypes.IQ) && stanza.getChild(stanzaEvents.SERVICES, stanzaNamespaces.JINGLE_MESSAGE) && (ref === 'set' || ref === 'result');
+        const isIQ = stanza._name === 'iq';
+        return isIQ && stanza.services && ['set', 'result'].includes(stanza.type);
       },
       jingleMessageInit: stanza => {
-        return stanza.is(stanzaTypes.MESSAGE) && stanza.getChild(stanzaEvents.PROPOSE, stanzaNamespaces.JINGLE_MESSAGE);
+        const isMessage = stanza._name === 'message';
+        return isMessage && stanza.services && stanza.type === 'propose';
       },
       jingleMessageRetract: stanza => {
-        return stanza.is(stanzaTypes.MESSAGE) && stanza.getChild(stanzaEvents.RETRACT, stanzaNamespaces.JINGLE_MESSAGE);
+        const isMessage = stanza._name === 'message';
+        return isMessage && stanza.services && stanza.type === 'retract';
       },
       jingleMessageAccept: stanza => {
-        return stanza.is(stanzaTypes.MESSAGE) && stanza.getChild(stanzaEvents.ACCEPT, stanzaNamespaces.JINGLE_MESSAGE);
+        const isMessage = stanza._name === 'message';
+        return isMessage && stanza.services && stanza.type === 'accept';
       },
       jingleMessageProceed: stanza => {
-        return stanza.is(stanzaTypes.MESSAGE) && stanza.getChild(stanzaEvents.PROCEED, stanzaNamespaces.JINGLE_MESSAGE);
+        const isMessage = stanza._name === 'message';
+        return isMessage && stanza.services && stanza.type === 'proceed';
       },
       jingleMessageReject: stanza => {
-        return stanza.is(stanzaTypes.MESSAGE) && stanza.getChild(stanzaEvents.REJECT, stanzaNamespaces.JINGLE_MESSAGE);
+        const isMessage = stanza._name === 'message';
+        return isMessage && stanza.services && stanza.type === 'reject';
       },
 
       // todo this is realtime specific, might not go in firehose
       upgradeError: stanza => {
         const ref = this.jid;
-        const refFrom = stanza.attrs.from;
-        return stanza.is(stanzaTypes.PRESENCE) && stanza.attrs.type === 'error' && stanza.attrs.originalType === 'upgradeMedia' && stanza.attrs.to === (ref != null ? ref.toString() : void 0) && (refFrom != null ? refFrom.match(/@conference/) : void 0);
+        const refFrom = stanza.from;
+        const isPresence = stanza._name === 'presence';
+        return isPresence && stanza.type === 'error' && stanza.attrs.originalType === 'upgradeMedia' && stanza.to === (ref != null ? ref.toString() : void 0) && (refFrom != null ? refFrom.match(/@conference/) : void 0);
       }
     };
   }
