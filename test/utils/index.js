@@ -1,13 +1,40 @@
 'use strict';
 
 function MockRTCPeerConnection () {
-  const ZombieRTCPeerConnection = require('../../node_modules/zombese/lib/webrtc/ZombieRTCPeerConnection.js');
-  return new ZombieRTCPeerConnection();
+  const RTCPeerConnection = function () {
+    return {
+      addEventListener: () => {},
+      addStream: () => {},
+      createOffer: () => Promise.resolve(),
+      setLocalDescription: () => {},
+      setRemoteDescription: () => {},
+      createAnswer: () => Promise.resolve(),
+      gatherStats: () => {},
+      getStats: () => {
+        return {
+          then: () => {}
+        };
+      },
+      gotStats: () => {},
+      getRemoteStreams: () => {},
+      createDataChannel: () => {
+        return {
+          onmessage: null,
+          addEventListener: () => {}
+        };
+      },
+      offer: () => {},
+      getLocalStreams: function () {},
+      onIceCandidate: function () {},
+      onIceEndOfCandidates: function () {},
+      onIceStateChange: function () {}
+    };
+  };
+  return RTCPeerConnection;
 }
 
 function MockMediaSession () {
-  const ZombieRTCPeerConnection = require('../../node_modules/zombese/lib/webrtc/ZombieRTCPeerConnection.js');
-  class MyMediaSession extends ZombieRTCPeerConnection {}
+  const MyMediaSession = function () {};
   return new MyMediaSession();
 }
 

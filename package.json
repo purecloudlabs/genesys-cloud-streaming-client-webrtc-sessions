@@ -69,7 +69,6 @@
     "jxt-xmpp-types": "^3.0.0",
     "nyc": "^11.0.3",
     "semistandard": "^11.0.0",
-    "sinon": "^2.3.8",
-    "zombese": "^2.1.0"
+    "sinon": "^2.3.8"
   }
 }

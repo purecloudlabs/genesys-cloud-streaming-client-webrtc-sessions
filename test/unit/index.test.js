@@ -8,7 +8,16 @@ const {
   events
 } = require('../../constants');
 
-const stanzaObject = require('../data').stanzas;
+const {
+  jingleActionStanza,
+  iceServersStanza,
+  jingleMessageInitStanza,
+  jingleMessageRetractStanza,
+  jingleMessageAcceptStanza,
+  jingleMessageProceedStanza,
+  jingleMessageRejectStanza,
+  upgradeErrorStanza
+} = require('../data');
 
 const {
   MockRTCPeerConnection,
@@ -19,13 +28,9 @@ const SessionManager = require('../../src/index');
 
 let sessionManager;
 let sandbox;
-let stanza;
 test.beforeEach(() => {
-  global.RTCPeerConnection = MockRTCPeerConnection;
-  global.MediaSession = MockMediaSession;
-  stanza = {
-    inbound: '<iq xmlns="jabber:client" to="589a4b5c6014d01beb690444@realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com/realtime-test-JS-088bc99c-8b5a-4e0f-aca3-24474546f557-1094" id="589a4b7c000182072a4c84a3" type="error" from="589a4b7100000a9f65dfcb17-z@conference.realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com" mark="1486506921731" originalType="result"><error type="wait" code="429"><text>Throttled: Rate exceeded for /realtime/stanza/VideoBridgeProxyController/clientStanza in dimension 589a4b5c6014d01beb690444@realtime-test-inindca-51a45385-64ca-411e-9d56-e4df2a2d7792.orgspan.com</text><resource-constraint xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/><resource-limit-exceeded xmlns="urn:realtime:errors"/></error></iq>'
-  };
+  global.RTCPeerConnection = MockRTCPeerConnection();
+  global.MediaSession = MockMediaSession();
   const stanzaClient = {
     on () {},
     jid: {
@@ -120,38 +125,18 @@ test('prepareSession should return Media session', t => {
 
 test('checkStanza should call the appropriate handler', t => {
   t.plan(0);
-
-  // const isStub = sandbox.stub().callsFake(predicateVal => {
-  //   t.is(predicateVal, false);
-  // });
-  // const getChildStub = sandbox.stub().callsFake((event, data) => {
-  //   return {
-  //     attrs: {
-  //       'dont-answer': 'false'
-  //     }
-  //   };
-  // });
-
-  // const stanza = {
-  //   attrs: {
-  //     type: 'what',
-  //     kind: 'otherDump'
-  //   },
-  //   is: isStub,
-  //   getChild: getChildStub
-  // };
-  sessionManager.checkStanza(stanzaObject);
+  sessionManager.checkStanza(jingleStanza);
 });
 
 test('handleMessage should call checkStanza function', t => {
   sandbox.stub(sessionManager, 'checkStanza').callsFake(stanza => stanza);
-  sessionManager.handleMessage(stanza);
+  sessionManager.handleMessage(jingleActionStanza);
   t.is(sessionManager.checkStanza.called, true);
 });
 
 test('handleIq should call checkStanza function', t => {
   sandbox.stub(sessionManager, 'checkStanza').callsFake(stanza => stanza);
-  sessionManager.handleIq(stanza);
+  sessionManager.handleIq(jingleActionStanza);
   t.is(sessionManager.checkStanza.called, true);
 });
 
@@ -448,67 +433,58 @@ test('exposeEvents should return an array of stanzaEvents', t => {
 });
 
 /* stanzaCheckers --- Predicate functions that check each stanza */
-
-test('requestWebrtcDump should evaluate to true if type is get and kind is webrtcDump', t => {
-  t.plan(2);
-  const stanza = {
-    type: 'what',
-    kind: 'otherDump',
-    is: types => types
-  };
-  const actual = sessionManager.stanzaCheckers.requestWebRtcDump(stanza);
-  const expected = false;
+test('jingle should evaluate stanza object', t => {
+  t.plan(1);
+  const actual = sessionManager.stanzaCheckers.jingle(jingleActionStanza);
+  const expected = true;
   t.is(actual, expected);
-
-  const stanza2 = {
-    type: 'get',
-    kind: 'webrtcDump',
-    services: {},
-    _name: 'iq'
-  };
-  const actual2 = sessionManager.stanzaCheckers.requestWebRtcDump(stanza2);
-  const expected2 = true;
-  t.is(actual2, expected2);
 });
 
 test('iceServers should evaluate services and jingle message', t => {
   t.plan(1);
-  const actual = sessionManager.stanzaCheckers.iceServers(stanzaObject);
-  const expected = false;
+  const actual = sessionManager.stanzaCheckers.iceServers(iceServersStanza);
+  const expected = true;
   t.is(actual, expected);
 });
 
 test('jingleMessageInit should evaluate services and jingle message', t => {
   t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageInit(stanzaObject);
-  const expected = false;
+  const actual = sessionManager.stanzaCheckers.jingleMessageInit(jingleMessageInitStanza);
+  const expected = true;
   t.is(actual, expected);
 });
 
 test('jingleMessageRetract should evaluate services and jingle message', t => {
   t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageRetract(stanzaObject);
-  const expected = false;
+  const actual = sessionManager.stanzaCheckers.jingleMessageRetract(jingleMessageRetractStanza);
+  const expected = true;
   t.is(actual, expected);
 });
 
 test('jingleMessageAccept should evaluate services and jingle message', t => {
   t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageAccept(stanzaObject);
-  const expected = false;
+  const actual = sessionManager.stanzaCheckers.jingleMessageAccept(jingleMessageAcceptStanza);
+  const expected = true;
   t.is(actual, expected);
 });
 
 test('jingleMessageProceed should evaluate services and jingle message', t => {
   t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageProceed(stanzaObject);
-  const expected = false;
+  const actual = sessionManager.stanzaCheckers.jingleMessageProceed(jingleMessageProceedStanza);
+  const expected = true;
   t.is(actual, expected);
 });
 
 test('jingleMessageReject should evaluate services and jingle message', t => {
   t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageReject(stanzaObject);
+  const actual = sessionManager.stanzaCheckers.jingleMessageReject(jingleMessageRejectStanza);
+  const expected = true;
+  t.is(actual, expected);
+});
+
+test('upgradeError should evaluate error and presence', t => {
+  t.plan(1);
+  const actual = sessionManager.stanzaCheckers.upgradeError(upgradeErrorStanza);
   const expected = false;
   t.is(actual, expected);
 });
@@ -533,76 +509,39 @@ test('requestWebrtcDump should emit message', t => {
 
 test('jingleMessageInit should emit message', t => {
   t.plan(2);
-  const stanza = {
-    attrs: {
-      requestId: 'myRequestId1'
-    },
-    getChild: message => {
-      return {
-        attrs: {
-          'inin-cid': 'xxaa112222',
-          'inin-persistent-cid': 'persistentId111'
-        }
-      };
-    }
-  };
   const expectedData = {
-    autoAnswer: false,
-    conversationId: 'xxaa112222',
-    fromJid: 'I am full',
-    persistentConnectionId: 'persistentId111',
-    roomJid: 'full5555',
-    sessionId: 'random1234'
+    sessionId: 'proposeId1',
+    conversationId: undefined,
+    autoAnswer: undefined,
+    persistentConnectionId: undefined,
+    roomJid: 'o art thou',
+    fromJid: 'o art thou'
   };
   sandbox.stub(sessionManager, 'emit').callsFake((event, data) => {
     t.is(event, 'requestIncomingRtcSession');
     t.deepEqual(data, expectedData);
   });
-  sessionManager.stanzaHandlers.jingleMessageInit(stanza);
+  sessionManager.stanzaHandlers.jingleMessageInit(jingleMessageInitStanza);
 });
 
 test('jingleMessageRetract should emit message', t => {
   t.plan(1);
-  const stanza = {
-    attrs: {
-      requestId: 'myRequestId1'
-    },
-    getChild: message => message
-  };
-  t.truthy(sessionManager.stanzaHandlers.jingleMessageRetract(stanza));
+  t.truthy(sessionManager.stanzaHandlers.jingleMessageRetract(jingleMessageRetractStanza));
 });
 
 test('jingleMessageAccept should emit message', t => {
   t.plan(1);
-  const stanza = {
-    attrs: {
-      requestId: 'myRequestId1'
-    },
-    getChild: message => message
-  };
-  t.is(sessionManager.stanzaHandlers.jingleMessageAccept(stanza), undefined);
+  t.is(sessionManager.stanzaHandlers.jingleMessageAccept(jingleMessageAcceptStanza), undefined);
 });
 
 test('jingleMessageProceed should emit message', t => {
   t.plan(1);
-  const stanza = {
-    attrs: {
-      requestId: 'myRequestId1'
-    },
-    getChild: message => message
-  };
-  t.truthy(sessionManager.stanzaHandlers.jingleMessageProceed(stanza));
+  t.truthy(sessionManager.stanzaHandlers.jingleMessageProceed(jingleMessageProceedStanza));
 });
 
 test('jingleMessageReject should emit message', t => {
   t.plan(1);
-  const stanza = {
-    attrs: {
-      requestId: 'myRequestId1'
-    },
-    getChild: message => message
-  };
-  t.is(sessionManager.stanzaHandlers.jingleMessageReject(stanza), undefined);
+  t.is(sessionManager.stanzaHandlers.jingleMessageReject(jingleMessageRejectStanza), undefined);
 });
 
 /* stanzaHandlers */
