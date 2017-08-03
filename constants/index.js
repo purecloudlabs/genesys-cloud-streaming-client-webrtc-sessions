@@ -32,13 +32,15 @@ const constants = {
     RETRACT: 'retract',
     ACCEPT: 'accept',
     PROCEED: 'proceed',
-    REJECT: 'reject',
-    JINGLE_MESSAGE: 'urn:xmpp:jingle-message:0'
+    REJECT: 'reject'
   },
   stanzaTypes: {
     IQ: 'iq',
     MESSAGE: 'message',
     PRESENCE: 'presence'
+  },
+  stanzaNamespaces: {
+    JINGLE_MESSAGE: 'urn:xmpp:jingle-message:0'
   }
 };
 

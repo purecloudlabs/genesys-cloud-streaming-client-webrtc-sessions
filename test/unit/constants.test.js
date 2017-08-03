@@ -53,7 +53,7 @@ test('labels object should render proper labels', t => {
 });
 
 test('stanzaEvents should render proper events', t => {
-  t.plan(7);
+  t.plan(6);
   let stanzaEvents = constants.stanzaEvents;
   stanzaEvents = Object.keys(stanzaEvents).map(event => {
     return {
@@ -66,8 +66,7 @@ test('stanzaEvents should render proper events', t => {
     'retract',
     'accept',
     'proceed',
-    'reject',
-    'urn:xmpp:jingle-message:0'
+    'reject'
   ];
   stanzaEvents.forEach((value, index, array) => {
     t.is(value.event, eventLabels[index]);
@@ -89,5 +88,21 @@ test('stanzaTypes should render proper types', t => {
   ];
   stanzaTypes.forEach((value, index, array) => {
     t.is(value.types, typeLabels[index]);
+  });
+});
+
+test('stanzaNamespaces should render proper labels', t => {
+  t.plan(1);
+  let stanzaNamespaces = constants.stanzaNamespaces;
+  stanzaNamespaces = Object.keys(stanzaNamespaces).map(namespace => {
+    return {
+      types: stanzaNamespaces[namespace]
+    };
+  });
+  const nameSpaceLabels = [
+    'urn:xmpp:jingle-message:0'
+  ];
+  stanzaNamespaces.forEach((value, index, array) => {
+    t.is(value.types, nameSpaceLabels[index]);
   });
 });
