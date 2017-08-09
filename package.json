@@ -1,6 +1,6 @@
 {
   "name": "firehose-webrtc-sessions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Firehose Webrtc Session API",
   "main": "src/index.js",
   "scripts": {
