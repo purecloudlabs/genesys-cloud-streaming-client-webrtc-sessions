@@ -7,6 +7,10 @@
   "pre-push": [
     "test"
   ],
+  "files": [
+    "src",
+    "dist/firehose-webrtc-sessions.js"
+  ],
   "scripts": {
     "build:dist": "webpack --env=prod --progress --profile --colors",
     "unit-test": "nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
