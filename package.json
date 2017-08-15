@@ -2,8 +2,7 @@
   "name": "firehose-webrtc-sessions",
   "version": "0.1.3",
   "description": "Firehose Webrtc Session API",
-  "main": "dist/firehose-webrtc-sessions.js",
-  "module": "src/index.js",
+  "main": "src/index.js",
   "pre-push": [
     "test"
   ],
@@ -14,6 +13,7 @@
   "scripts": {
     "build:dist": "webpack --env=prod --progress --profile --colors",
     "unit-test": "nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
+    "prepublish": "npm run build:dist && npm run test",
     "test": "npm run semistandard && npm run unit-test && npm run report",
     "report": "nyc report",
     "semistandard": "semistandard",
