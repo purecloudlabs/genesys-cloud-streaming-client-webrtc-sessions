@@ -2,7 +2,7 @@
   "name": "firehose-webrtc-sessions",
   "version": "0.1.4",
   "description": "Firehose Webrtc Session API",
-  "main": "src/index.js",
+  "main": "dist/firehose-webrtc-sessions.js",
   "pre-push": [
     "test"
   ],
