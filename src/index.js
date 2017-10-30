@@ -5,12 +5,15 @@ const MediaSession = require('jingle-media-session-purecloud');
 const uuid = require('uuid');
 const WildEmitter = require('wildemitter');
 const Jingle = require('jingle-purecloud');
+const ltx = require('ltx');
 
 const {
   events,
   labels,
   stanzaEvents
 } = require('../constants');
+
+const DEFAULT_LAST_N_LIMIT = 2;
 
 const guard = require('../utils').guard;
 
@@ -65,6 +68,7 @@ class JingleSessionManager extends WildEmitter {
       }
     });
 
+    this.stanzaClient = stanzaClient;
     this.proxyEvents();
   }
 
@@ -168,7 +172,7 @@ class JingleSessionManager extends WildEmitter {
         }
       }.bind(this),
 
-      initiateRtcSession: function ({opts, callback = function () {}}) {
+      initiateRtcSession: function (opts) {
         const session = {
           to: opts.jid,
           propose: {
@@ -192,21 +196,42 @@ class JingleSessionManager extends WildEmitter {
 
           // this is problematic, because this is a realtime thing. need to figure out what to do here
           // probably just construct the stanza
-          this.emit(events.UPDATE_MEDIA_PRESENCE, {
-            opts: opts,
-            mediaDescriptions: mediaDescriptions,
-            callback: callback
-          });
+          // this.emit(events.UPDATE_MEDIA_PRESENCE, {
+          //   opts: opts,
+          //   mediaDescriptions: mediaDescriptions,
+          //   callback: callback
+          // });
+
+          const stanza = new ltx.Element('presence', {from: this.jid, to: opts.jid, id: uuid()});
+          const x = stanza.c('x', {xmlns: 'orgspan:mediaStream'});
+          const mediaStream = x.c('mediaStream');
+
+          if (opts.conversationId) {
+            x.attrs.conversationId = opts.conversationId;
+          }
+
+          if (opts.sourceCommunicationId) {
+            x.attrs.sourceCommunicationId = opts.sourceCommunicationId;
+          }
+
+          if (mediaDescriptions.length) {
+            stanza.attrs.type = 'upgradeMedia';
+            stanza.attrs['last-n'] = opts.lastNLimit || DEFAULT_LAST_N_LIMIT;
+          }
+          for (const mediaDescription of mediaDescriptions) {
+            mediaStream.attrs[mediaDescription.media] = 'true';
+          }
+
+          this.stanzaClient.send(stanza);
         } else {
           this.emit('send', session, true); // send as Message
           this.pendingSessions[session.propose.id] = session;
-          callback(null);
         }
 
         return session.propose.id;
       }.bind(this),
 
-      endRtcSessions: function ({opts, reason = 'success', callback = function () {}}) {
+      endRtcSessions: function (opts, reason = 'success', callback = () => {}) {
         if (typeof opts === 'function') {
           callback = opts;
           opts = { jid: null };
