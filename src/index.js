@@ -202,9 +202,9 @@ class JingleSessionManager extends WildEmitter {
           //   callback: callback
           // });
 
-          const stanza = new ltx.Element('presence', {from: this.jid, to: opts.jid, id: uuid()});
-          const x = stanza.c('x', {xmlns: 'orgspan:mediaStream'});
-          const mediaStream = x.c('mediaStream');
+          const stanza = new ltx.Element('presence', {from: this.stanzaClient.config.jid.toString(), to: opts.jid, id: uuid()});
+          const x = stanza.c('x', {xmlns: 'orgspan:mediastream'});
+          const mediaStream = x.c('mediastream');
 
           if (opts.conversationId) {
             x.attrs.conversationId = opts.conversationId;
@@ -222,7 +222,7 @@ class JingleSessionManager extends WildEmitter {
             mediaStream.attrs[mediaDescription.media] = 'true';
           }
 
-          this.stanzaClient.send(stanza);
+          console.log('sendId', this.stanzaClient.send(stanza));
         } else {
           this.emit('send', session, true); // send as Message
           this.pendingSessions[session.propose.id] = session;
@@ -414,6 +414,7 @@ class JingleSessionManager extends WildEmitter {
   get stanzaHandlers () {
     return {
       jingle: function (stanza) {
+        debugger;
         if (['result', 'error'].includes(stanza.type)) {
           const pendingIq = this.pendingIqs[stanza.id];
           if (pendingIq) {
@@ -437,6 +438,8 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       jingleMessageInit: function (stanza) {
+        debugger;
+        console.log('test log');
         if (stanza.from === this.jid.bare().toString()) {
           return;
         }
