@@ -182,10 +182,12 @@ class JingleSessionManager extends WildEmitter {
         };
         if (opts.stream) {
           for (let track of Array.from(opts.stream.getTracks())) {
-            session.propose.descriptions.push({
-              media: track.kind
-            });
+            session.propose.descriptions.push({ media: track.kind });
           }
+        }
+
+        if (opts.mediaPurpose) {
+          session.propose.descriptions.push({media: opts.mediaPurpose});
         }
 
         if (opts.jid.match(/@conference/)) {
