@@ -224,7 +224,7 @@ class JingleSessionManager extends WildEmitter {
             mediaStream.attrs[mediaDescription.media] = 'true';
           }
 
-          console.log('sendId', this.stanzaClient.send(stanza));
+          this.stanzaClient.send(stanza);
         } else {
           this.emit('send', session, true); // send as Message
           this.pendingSessions[session.propose.id] = session;
@@ -357,12 +357,7 @@ class JingleSessionManager extends WildEmitter {
     return {
       // https://xmpp.org/extensions/xep-0166.html
       jingle: stanza => {
-        const isIQ = stanza._name === 'iq';
-        return isIQ && (
-          (stanza.jingle && stanza.type === 'set') ||
-          (stanza.type === 'result' && stanza.xml.children.length === 0) || // todo: better way?
-          (stanza.error && stanza.type === 'error')
-        );
+        return !!stanza.jingle;
       },
 
       requestWebRtcDump: stanza => {
@@ -371,8 +366,7 @@ class JingleSessionManager extends WildEmitter {
       },
 
       iceServers: stanza => {
-        const isIQ = stanza._name === 'iq';
-        return isIQ && stanza.services && ['set', 'result'].includes(stanza.type);
+        return stanza.services && ['set', 'result'].includes(stanza.type);
       },
 
       // https://xmpp.org/extensions/xep-0353.html
@@ -427,8 +421,9 @@ class JingleSessionManager extends WildEmitter {
           }
 
           // the core of handling jingle stanzas is to feed them to jinglejs
-          this.jingleJs.process(stanza.toJSON()); // todo: do we need toJSON()?
         }
+
+        this.jingleJs.process(stanza);
       }.bind(this),
 
       requestWebrtcDump: function (stanza) {
