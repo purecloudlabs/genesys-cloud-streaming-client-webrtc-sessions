@@ -416,7 +416,6 @@ class JingleSessionManager extends WildEmitter {
   get stanzaHandlers () {
     return {
       jingle: function (stanza) {
-        debugger;
         if (['result', 'error'].includes(stanza.type)) {
           const pendingIq = this.pendingIqs[stanza.id];
           if (pendingIq) {
@@ -440,7 +439,6 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       jingleMessageInit: function (stanza) {
-        debugger;
         console.log('test log');
         if (stanza.from === this.jid.bare().toString()) {
           return;
