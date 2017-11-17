@@ -173,6 +173,10 @@ class JingleSessionManager extends WildEmitter {
         return this.iceServers;
       }.bind(this),
 
+      on: function (event, handler) {
+        this.on(event, handler);
+      }.bind(this),
+
       createRtcSession: function ({jid, sid, stream, peerConstraints, peerConnectionConstraints}) {
         this.logger.info('video', 'startVideoChat', jid);
 
