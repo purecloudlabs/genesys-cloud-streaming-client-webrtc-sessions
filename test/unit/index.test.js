@@ -35,6 +35,12 @@ test.beforeEach(() => {
     on () {},
     jid: {
       bare: () => 'theOneJidToRuleThemAll12345'
+    },
+    disco: {
+      addFeature () {}
+    },
+    stanzas: {
+      withDefinition () {}
     }
   };
   sandbox = sinon.sandbox.create();
@@ -102,7 +108,9 @@ test.afterEach(() => {
 test('sessionManager should take in a stanzaClient and clientOptions', t => {
   t.plan(1);
   const stanzaClient = {
-    on () {}
+    on () {},
+    disco: { addFeature () {} },
+    stanzas: { withDefinition () {} }
   };
   const clientOptions = {
     iceServers: [],

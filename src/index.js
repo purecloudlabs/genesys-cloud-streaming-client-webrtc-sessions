@@ -13,6 +13,23 @@ const {
   stanzaEvents
 } = require('../constants');
 
+const CAPABILITIES = [
+  'urn:xmpp:jingle:apps:rtp:1',
+  'urn:xmpp:jingle:apps:rtp:audio',
+  'urn:xmpp:jingle:apps:rtp:video',
+  'urn:xmpp:jingle:apps:rtp:rtcb-fb:0',
+  'urn:xmpp:jingle:apps:rtp:rtp-hdrext:0',
+  'urn:xmpp:jingle:apps:rtp:ssma:0',
+  'urn:xmpp:jingle:apps:dtls:0',
+  'urn:xmpp:jingle:apps:grouping:0',
+  'urn:xmpp:jingle:apps:file-transfer:3',
+  'urn:xmpp:jingle:transports:ice-udp:1',
+  'urn:xmpp:jingle:transports:dtls-sctp:1',
+  'urn:ietf:rfc:3264',
+  'urn:ietf:rfc:5576',
+  'urn:ietf:rfc:5888'
+];
+
 const DEFAULT_LAST_N_LIMIT = 2;
 
 const guard = require('../utils').guard;
@@ -49,6 +66,11 @@ function prepareSession (options) {
 class JingleSessionManager extends WildEmitter {
   constructor (stanzaClient, clientOptions = {}) {
     super();
+
+    stanzaClient.disco.addFeature('urn:xmpp:jingle:1');
+    if (window.RTCPeerConnection) {
+      CAPABILITIES.forEach(c => stanzaClient.disco.addFeature(c));
+    }
 
     stanzaClient.stanzas.withDefinition('content', 'urn:xmpp:jingle:1', function (Content) {
       stanzaClient.stanzas.extend(Content, stanzaClient.stanzas.define({
