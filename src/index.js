@@ -49,6 +49,19 @@ function prepareSession (options) {
 class JingleSessionManager extends WildEmitter {
   constructor (stanzaClient, clientOptions = {}) {
     super();
+
+    stanzaClient.stanzas.withDefinition('content', 'urn:xmpp:jingle:1', function (Content) {
+      stanzaClient.stanzas.extend(Content, stanzaClient.stanzas.define({
+        name: '_datachannel',
+        namespace: 'urn:xmpp:jingle:transports:webrtc-datachannel:0',
+        element: 'description',
+        tags: ['jingle-application'],
+        fields: {
+          applicationType: { value: 'datachannel' }
+        }
+      }));
+    });
+
     this.iceServers = clientOptions.iceServers || [];
     this.jingleJs = new Jingle({
       iceServers: this.iceServers,
