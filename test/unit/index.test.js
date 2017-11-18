@@ -28,6 +28,17 @@ const SessionManager = require('../../src/index');
 
 let sessionManager;
 let sandbox;
+
+const MOCK_JXT = {
+  withDefinition () {},
+  utils: {
+    attribute () {}
+  },
+  define () {},
+  extend () {},
+  extendPresence () {}
+};
+
 test.beforeEach(() => {
   global.RTCPeerConnection = MockRTCPeerConnection();
   global.MediaSession = MockMediaSession();
@@ -39,9 +50,7 @@ test.beforeEach(() => {
     disco: {
       addFeature () {}
     },
-    stanzas: {
-      withDefinition () {}
-    }
+    stanzas: MOCK_JXT
   };
   sandbox = sinon.sandbox.create();
   sandbox.stub(jingleStanza, 'getData').callsFake(jid => {
@@ -110,7 +119,7 @@ test('sessionManager should take in a stanzaClient and clientOptions', t => {
   const stanzaClient = {
     on () {},
     disco: { addFeature () {} },
-    stanzas: { withDefinition () {} }
+    stanzas: MOCK_JXT
   };
   const clientOptions = {
     iceServers: [],
@@ -534,21 +543,25 @@ test('jingleMessageInit should emit message', t => {
 
 test('jingleMessageRetract should emit message', t => {
   t.plan(1);
+  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
   t.truthy(sessionManager.stanzaHandlers.jingleMessageRetract(jingleMessageRetractStanza));
 });
 
 test('jingleMessageAccept should emit message', t => {
   t.plan(1);
+  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
   t.is(sessionManager.stanzaHandlers.jingleMessageAccept(jingleMessageAcceptStanza), undefined);
 });
 
 test('jingleMessageProceed should emit message', t => {
   t.plan(1);
+  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
   t.truthy(sessionManager.stanzaHandlers.jingleMessageProceed(jingleMessageProceedStanza));
 });
 
 test('jingleMessageReject should emit message', t => {
   t.plan(1);
+  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
   t.is(sessionManager.stanzaHandlers.jingleMessageReject(jingleMessageRejectStanza), undefined);
 });
 

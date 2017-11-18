@@ -5,7 +5,6 @@ const MediaSession = require('jingle-media-session-purecloud');
 const uuid = require('uuid');
 const WildEmitter = require('wildemitter');
 const Jingle = require('jingle-purecloud');
-const ltx = require('ltx');
 
 const {
   events,
@@ -29,8 +28,6 @@ const CAPABILITIES = [
   'urn:ietf:rfc:5576',
   'urn:ietf:rfc:5888'
 ];
-
-const DEFAULT_LAST_N_LIMIT = 2;
 
 const guard = require('../utils').guard;
 
@@ -72,6 +69,8 @@ class JingleSessionManager extends WildEmitter {
       CAPABILITIES.forEach(c => stanzaClient.disco.addFeature(c));
     }
 
+    // Define an extension for Jingle RTP for Data Channel, since jingle-xmpp-types
+    // does not have it, for some reason
     stanzaClient.stanzas.withDefinition('content', 'urn:xmpp:jingle:1', function (Content) {
       stanzaClient.stanzas.extend(Content, stanzaClient.stanzas.define({
         name: '_datachannel',
@@ -83,6 +82,33 @@ class JingleSessionManager extends WildEmitter {
         }
       }));
     });
+
+    // Define an extension for presence to support our proprietary media presence
+    const attribute = stanzaClient.stanzas.utils.attribute;
+    const MediaStream = stanzaClient.stanzas.define({
+      name: 'mediastream',
+      tags: ['mediastream'],
+      element: 'mediastream',
+      fields: {
+        audio: attribute('audio'),
+        video: attribute('video'),
+        screenRecording: attribute('screenRecording')
+      }
+    });
+
+    const MediaPresence = stanzaClient.stanzas.define({
+      name: 'media',
+      namespace: 'orgspan:mediastream',
+      element: 'x',
+      tags: ['mediapresence'],
+      fields: {
+        conversationId: attribute('conversationId'),
+        sourceCommunicationId: attribute('sourceCommunicationId')
+      }
+    });
+
+    stanzaClient.stanzas.extend(MediaPresence, MediaStream, 'mediaStreams');
+    stanzaClient.stanzas.extendPresence(MediaPresence);
 
     this.iceServers = clientOptions.iceServers || [];
     this.jingleJs = new Jingle({
@@ -235,28 +261,29 @@ class JingleSessionManager extends WildEmitter {
             mediaDescriptions = [ { media: 'listener' } ];
           }
 
-          // TODO: switch to creating a custom stanza schema extension and using built in jxt, instead of ltx
-          const stanza = new ltx.Element('presence', {from: this.stanzaClient.config.jid.toString(), to: opts.jid, id: uuid()});
-          const x = stanza.c('x', {xmlns: 'orgspan:mediastream'});
-          const mediaStream = x.c('mediastream');
+          const Presence = this.stanzaClient.stanzas.getPresence();
+          const mediaPresence = {
+            type: mediaDescriptions.length ? 'upgradeMedia' : 'available',
+            to: opts.jid,
+            id: uuid(),
+            from: this.stanzaClient.config.jid,
+            media: {
+              conversationId: opts.conversationId,
+              sourceCommunicationId: opts.sourceCommunicationId,
+              mediaStreams: [
+                {}
+              ]
+            }
+          };
 
-          if (opts.conversationId) {
-            x.attrs.conversationId = opts.conversationId;
-          }
+          // TODO? can't set last-n on parent element because it invalidates presence root schema
 
-          if (opts.sourceCommunicationId) {
-            x.attrs.sourceCommunicationId = opts.sourceCommunicationId;
-          }
-
-          if (mediaDescriptions.length) {
-            stanza.attrs.type = 'upgradeMedia';
-            stanza.attrs['last-n'] = opts.lastNLimit || DEFAULT_LAST_N_LIMIT;
-          }
+          const mediaStreamDescription = mediaPresence.media.mediaStreams[0];
           for (const mediaDescription of mediaDescriptions) {
-            mediaStream.attrs[mediaDescription.media] = 'true';
+            mediaStreamDescription[mediaDescription.media] = 'true';
           }
 
-          this.stanzaClient.send(stanza);
+          this.stanzaClient.send(new Presence(mediaPresence));
         } else {
           this.emit('send', session, true); // send as Message
           this.pendingSessions[session.propose.id] = session;
