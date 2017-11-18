@@ -235,14 +235,7 @@ class JingleSessionManager extends WildEmitter {
             mediaDescriptions = [ { media: 'listener' } ];
           }
 
-          // this is problematic, because this is a realtime thing. need to figure out what to do here
-          // probably just construct the stanza
-          // this.emit(events.UPDATE_MEDIA_PRESENCE, {
-          //   opts: opts,
-          //   mediaDescriptions: mediaDescriptions,
-          //   callback: callback
-          // });
-
+          // TODO: switch to creating a custom stanza schema extension and using built in jxt, instead of ltx
           const stanza = new ltx.Element('presence', {from: this.stanzaClient.config.jid.toString(), to: opts.jid, id: uuid()});
           const x = stanza.c('x', {xmlns: 'orgspan:mediastream'});
           const mediaStream = x.c('mediastream');
@@ -290,17 +283,11 @@ class JingleSessionManager extends WildEmitter {
         const jid = opts.jid || opts.oneToOneJid;
 
         if (jid) {
-          // TODO: remove if-block after PCDWEBK-3533 (realtime and web-directory) has been merged and shipped to all environments
-          // and after web-directory has removed their use of "oneToOneJid"
-          if (opts.oneToOneJid) {
-            this.logger.warn('use of oneToOneJid with endRtcSessions is deprecated. please use "opts.jid"');
-          }
-
-          this.handleEndRtcSessionsWithJid({jid, reason});
+          this.handleEndRtcSessionsWithJid({ jid, reason });
 
           if (jid.match(/@conference/)) {
             this.emit(events.UPDATE_MEDIA_PRESENCE, {
-              opts: {jid},
+              opts: { jid },
               mediaDescriptions: [],
               callback: callback
             });
@@ -473,7 +460,6 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       jingleMessageInit: function (stanza) {
-        console.log('test log');
         if (stanza.from === this.jid.bare().toString()) {
           return;
         }
