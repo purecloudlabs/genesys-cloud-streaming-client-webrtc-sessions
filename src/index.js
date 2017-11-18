@@ -12,6 +12,23 @@ const {
   stanzaEvents
 } = require('../constants');
 
+const CAPABILITIES = [
+  'urn:xmpp:jingle:apps:rtp:1',
+  'urn:xmpp:jingle:apps:rtp:audio',
+  'urn:xmpp:jingle:apps:rtp:video',
+  'urn:xmpp:jingle:apps:rtp:rtcb-fb:0',
+  'urn:xmpp:jingle:apps:rtp:rtp-hdrext:0',
+  'urn:xmpp:jingle:apps:rtp:ssma:0',
+  'urn:xmpp:jingle:apps:dtls:0',
+  'urn:xmpp:jingle:apps:grouping:0',
+  'urn:xmpp:jingle:apps:file-transfer:3',
+  'urn:xmpp:jingle:transports:ice-udp:1',
+  'urn:xmpp:jingle:transports:dtls-sctp:1',
+  'urn:ietf:rfc:3264',
+  'urn:ietf:rfc:5576',
+  'urn:ietf:rfc:5888'
+];
+
 const guard = require('../utils').guard;
 
 function prepareSession (options) {
@@ -46,6 +63,53 @@ function prepareSession (options) {
 class JingleSessionManager extends WildEmitter {
   constructor (stanzaClient, clientOptions = {}) {
     super();
+
+    stanzaClient.disco.addFeature('urn:xmpp:jingle:1');
+    if (window.RTCPeerConnection) {
+      CAPABILITIES.forEach(c => stanzaClient.disco.addFeature(c));
+    }
+
+    // Define an extension for Jingle RTP for Data Channel, since jingle-xmpp-types
+    // does not have it, for some reason
+    stanzaClient.stanzas.withDefinition('content', 'urn:xmpp:jingle:1', function (Content) {
+      stanzaClient.stanzas.extend(Content, stanzaClient.stanzas.define({
+        name: '_datachannel',
+        namespace: 'urn:xmpp:jingle:transports:webrtc-datachannel:0',
+        element: 'description',
+        tags: ['jingle-application'],
+        fields: {
+          applicationType: { value: 'datachannel' }
+        }
+      }));
+    });
+
+    // Define an extension for presence to support our proprietary media presence
+    const attribute = stanzaClient.stanzas.utils.attribute;
+    const MediaStream = stanzaClient.stanzas.define({
+      name: 'mediastream',
+      tags: ['mediastream'],
+      element: 'mediastream',
+      fields: {
+        audio: attribute('audio'),
+        video: attribute('video'),
+        screenRecording: attribute('screenRecording')
+      }
+    });
+
+    const MediaPresence = stanzaClient.stanzas.define({
+      name: 'media',
+      namespace: 'orgspan:mediastream',
+      element: 'x',
+      tags: ['mediapresence'],
+      fields: {
+        conversationId: attribute('conversationId'),
+        sourceCommunicationId: attribute('sourceCommunicationId')
+      }
+    });
+
+    stanzaClient.stanzas.extend(MediaPresence, MediaStream, 'mediaStreams');
+    stanzaClient.stanzas.extendPresence(MediaPresence);
+
     this.iceServers = clientOptions.iceServers || [];
     this.jingleJs = new Jingle({
       iceServers: this.iceServers,
@@ -65,6 +129,7 @@ class JingleSessionManager extends WildEmitter {
       }
     });
 
+    this.stanzaClient = stanzaClient;
     this.proxyEvents();
   }
 
@@ -134,6 +199,10 @@ class JingleSessionManager extends WildEmitter {
         return this.iceServers;
       }.bind(this),
 
+      on: function (event, handler) {
+        this.on(event, handler);
+      }.bind(this),
+
       createRtcSession: function ({jid, sid, stream, peerConstraints, peerConnectionConstraints}) {
         this.logger.info('video', 'startVideoChat', jid);
 
@@ -168,7 +237,7 @@ class JingleSessionManager extends WildEmitter {
         }
       }.bind(this),
 
-      initiateRtcSession: function ({opts, callback = function () {}}) {
+      initiateRtcSession: function (opts) {
         const session = {
           to: opts.jid,
           propose: {
@@ -178,10 +247,12 @@ class JingleSessionManager extends WildEmitter {
         };
         if (opts.stream) {
           for (let track of Array.from(opts.stream.getTracks())) {
-            session.propose.descriptions.push({
-              media: track.kind
-            });
+            session.propose.descriptions.push({ media: track.kind });
           }
+        }
+
+        if (opts.mediaPurpose) {
+          session.propose.descriptions.push({media: opts.mediaPurpose});
         }
 
         if (opts.jid.match(/@conference/)) {
@@ -190,23 +261,38 @@ class JingleSessionManager extends WildEmitter {
             mediaDescriptions = [ { media: 'listener' } ];
           }
 
-          // this is problematic, because this is a realtime thing. need to figure out what to do here
-          // probably just construct the stanza
-          this.emit(events.UPDATE_MEDIA_PRESENCE, {
-            opts: opts,
-            mediaDescriptions: mediaDescriptions,
-            callback: callback
-          });
+          const Presence = this.stanzaClient.stanzas.getPresence();
+          const mediaPresence = {
+            type: mediaDescriptions.length ? 'upgradeMedia' : 'available',
+            to: opts.jid,
+            id: uuid(),
+            from: this.stanzaClient.config.jid,
+            media: {
+              conversationId: opts.conversationId,
+              sourceCommunicationId: opts.sourceCommunicationId,
+              mediaStreams: [
+                {}
+              ]
+            }
+          };
+
+          // TODO? can't set last-n on parent element because it invalidates presence root schema
+
+          const mediaStreamDescription = mediaPresence.media.mediaStreams[0];
+          for (const mediaDescription of mediaDescriptions) {
+            mediaStreamDescription[mediaDescription.media] = 'true';
+          }
+
+          this.stanzaClient.send(new Presence(mediaPresence));
         } else {
           this.emit('send', session, true); // send as Message
           this.pendingSessions[session.propose.id] = session;
-          callback(null);
         }
 
         return session.propose.id;
       }.bind(this),
 
-      endRtcSessions: function ({opts, reason = 'success', callback = function () {}}) {
+      endRtcSessions: function (opts, reason = 'success', callback = () => {}) {
         if (typeof opts === 'function') {
           callback = opts;
           opts = { jid: null };
@@ -224,17 +310,11 @@ class JingleSessionManager extends WildEmitter {
         const jid = opts.jid || opts.oneToOneJid;
 
         if (jid) {
-          // TODO: remove if-block after PCDWEBK-3533 (realtime and web-directory) has been merged and shipped to all environments
-          // and after web-directory has removed their use of "oneToOneJid"
-          if (opts.oneToOneJid) {
-            this.logger.warn('use of oneToOneJid with endRtcSessions is deprecated. please use "opts.jid"');
-          }
-
-          this.handleEndRtcSessionsWithJid({jid, reason});
+          this.handleEndRtcSessionsWithJid({ jid, reason });
 
           if (jid.match(/@conference/)) {
             this.emit(events.UPDATE_MEDIA_PRESENCE, {
-              opts: {jid},
+              opts: { jid },
               mediaDescriptions: [],
               callback: callback
             });
@@ -330,12 +410,7 @@ class JingleSessionManager extends WildEmitter {
     return {
       // https://xmpp.org/extensions/xep-0166.html
       jingle: stanza => {
-        const isIQ = stanza._name === 'iq';
-        return isIQ && (
-          (stanza.jingle && stanza.type === 'set') ||
-          (stanza.type === 'result' && stanza.xml.children.length === 0) || // todo: better way?
-          (stanza.error && stanza.type === 'error')
-        );
+        return !!stanza.jingle;
       },
 
       requestWebRtcDump: stanza => {
@@ -344,8 +419,7 @@ class JingleSessionManager extends WildEmitter {
       },
 
       iceServers: stanza => {
-        const isIQ = stanza._name === 'iq';
-        return isIQ && stanza.services && ['set', 'result'].includes(stanza.type);
+        return stanza.services && ['set', 'result'].includes(stanza.type);
       },
 
       // https://xmpp.org/extensions/xep-0353.html
@@ -400,8 +474,9 @@ class JingleSessionManager extends WildEmitter {
           }
 
           // the core of handling jingle stanzas is to feed them to jinglejs
-          this.jingleJs.process(stanza.toJSON()); // todo: do we need toJSON()?
         }
+
+        this.jingleJs.process(stanza);
       }.bind(this),
 
       requestWebrtcDump: function (stanza) {
