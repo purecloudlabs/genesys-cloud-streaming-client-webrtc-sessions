@@ -7,7 +7,7 @@ source ./repo/scripts/prebuild.sh
 cd $WORKSPACE/repo
 
 # run NPM install
-npm install
+npm install --no-save
 
 ## Run npm test
 npm test
