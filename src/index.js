@@ -65,7 +65,7 @@ class JingleSessionManager extends WildEmitter {
     super();
 
     stanzaClient.disco.addFeature('urn:xmpp:jingle:1');
-    if (window.RTCPeerConnection) {
+    if (typeof window !== 'undefined' && window.RTCPeerConnection) {
       CAPABILITIES.forEach(c => stanzaClient.disco.addFeature(c));
     }
 
