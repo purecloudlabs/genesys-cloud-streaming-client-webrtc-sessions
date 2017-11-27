@@ -195,8 +195,12 @@ class JingleSessionManager extends WildEmitter {
   // these are the methods exposed on the extension (session manager)
   get expose () {
     return {
+      setIceServers: function (iceServers) {
+        this.jingleJs.iceServers = iceServers;
+      }.bind(this),
+
       getIceServers: function () {
-        return this.iceServers;
+        return this.jingleJs.iceServers;
       }.bind(this),
 
       on: function (event, handler) {
