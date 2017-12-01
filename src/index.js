@@ -208,7 +208,7 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       off: function (event, handler) {
-        this.on(event, handler);
+        this.off(event, handler);
       }.bind(this),
 
       createRtcSession: function ({jid, sid, stream, peerConstraints, peerConnectionConstraints}) {
