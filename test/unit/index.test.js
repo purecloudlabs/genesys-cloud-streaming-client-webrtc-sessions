@@ -43,14 +43,21 @@ test.beforeEach(() => {
   global.RTCPeerConnection = MockRTCPeerConnection();
   global.MediaSession = MockMediaSession();
   const stanzaClient = {
-    on () {},
+    callbacks: {},
+    on (e, callback) {
+      this.callbacks[e] = this.callbacks[e] || [];
+      this.callbacks[e].push(callback);
+    },
     jid: {
       bare: () => 'theOneJidToRuleThemAll12345'
     },
     disco: {
       addFeature () {}
     },
-    stanzas: MOCK_JXT
+    stanzas: MOCK_JXT,
+    emit (e) {
+      (this.callbacks[e] || []).forEach(fn => fn(...arguments));
+    }
   };
   sandbox = sinon.sandbox.create();
   sandbox.stub(jingleStanza, 'getData').callsFake(jid => {
@@ -155,6 +162,16 @@ test('handleIq should call checkStanza function', t => {
   sandbox.stub(sessionManager, 'checkStanza').callsFake(stanza => stanza);
   sessionManager.handleIq(jingleActionStanza);
   t.is(sessionManager.checkStanza.called, true);
+});
+
+test.serial('it should register for jingle events', async t => {
+  const p = new Promise((resolve) => {
+    sandbox.stub(sessionManager.jingleJs, 'process').callsFake(resolve);
+  });
+  sessionManager.stanzaClient.emit('iq:set:jingle', jingleActionStanza);
+  await p;
+  t.is(sessionManager.jingleJs.process.calledOnce, true);
+  t.is(sessionManager.jingleJs.process.calledWith(jingleActionStanza), true);
 });
 
 test('handleEndRtcSessionsWithJid should return undefined if jid not in peerId', t => {
@@ -450,13 +467,6 @@ test('exposeEvents should return an array of stanzaEvents', t => {
 });
 
 /* stanzaCheckers --- Predicate functions that check each stanza */
-test('jingle should evaluate stanza object', t => {
-  t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingle(jingleActionStanza);
-  const expected = true;
-  t.is(actual, expected);
-});
-
 test('iceServers should evaluate services and jingle message', t => {
   t.plan(1);
   const actual = sessionManager.stanzaCheckers.iceServers(iceServersStanza);
