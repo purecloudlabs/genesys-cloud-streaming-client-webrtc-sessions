@@ -29,6 +29,11 @@ const CAPABILITIES = [
   'urn:ietf:rfc:5888'
 ];
 
+const STANZA_EVENTS = [
+  'iq:set:jingle',
+  'iq:get:jingle'
+];
+
 const guard = require('../utils').guard;
 
 function prepareSession (options) {
@@ -165,6 +170,11 @@ class JingleSessionManager extends WildEmitter {
         this.stanzaHandlers[handlerName](stanza);
       }
     });
+  }
+
+  // stanza events to register with stanza.io
+  get stanzaEvents () {
+    return [...STANZA_EVENTS];
   }
 
   handleIq (stanza) {
