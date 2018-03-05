@@ -55,8 +55,8 @@ test.beforeEach(() => {
       addFeature () {}
     },
     stanzas: MOCK_JXT,
-    emit (e) {
-      (this.callbacks[e] || []).forEach(fn => fn(...arguments));
+    emit (e, ...args) {
+      (this.callbacks[e] || []).forEach(fn => fn(...args));
     }
   };
   sandbox = sinon.sandbox.create();

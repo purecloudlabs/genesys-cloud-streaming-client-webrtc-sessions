@@ -136,11 +136,7 @@ class JingleSessionManager extends WildEmitter {
 
     this.stanzaClient = stanzaClient;
 
-    STANZA_EVENTS.forEach(e => {
-      stanzaClient.on(e, (e, stanza) => {
-        this.stanzaHandlers.jingle(stanza);
-      });
-    });
+    STANZA_EVENTS.forEach(e => stanzaClient.on(e, this.stanzaHandlers.jingle.bind(this)));
     this.proxyEvents();
   }
 
