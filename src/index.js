@@ -135,6 +135,12 @@ class JingleSessionManager extends WildEmitter {
     });
 
     this.stanzaClient = stanzaClient;
+
+    STANZA_EVENTS.forEach(e => {
+      stanzaClient.on(e, (e, stanza) => {
+        this.stanzaHandlers.jingle(stanza);
+      });
+    });
     this.proxyEvents();
   }
 
@@ -426,11 +432,6 @@ class JingleSessionManager extends WildEmitter {
   // these are functions to check each stanza and return a predicate (A function that evaluates to true/false)
   get stanzaCheckers () {
     return {
-      // https://xmpp.org/extensions/xep-0166.html
-      jingle: stanza => {
-        return !!stanza.jingle;
-      },
-
       requestWebRtcDump: stanza => {
         const isIQ = stanza._name === 'iq';
         return isIQ && stanza.services && stanza.type === 'get' && stanza.kind === 'webrtcDump';
