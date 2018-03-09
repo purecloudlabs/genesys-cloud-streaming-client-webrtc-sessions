@@ -4,6 +4,7 @@ const MediaDataSession = require('jingle-media-data-session-purecloud');
 const MediaSession = require('jingle-media-session-purecloud');
 const uuid = require('uuid');
 const WildEmitter = require('wildemitter');
+const LRU = require('lru-cache');
 const Jingle = require('jingle-purecloud');
 
 const {
@@ -122,6 +123,9 @@ class JingleSessionManager extends WildEmitter {
     });
     this.pendingSessions = {};
 
+    // can ignore up to 10 sessions for up to 6 hours
+    this.ignoredSessions = LRU({ max: 10, maxAge: 10 * 60 * 60 * 6 });
+
     this.logger = clientOptions.logger || console;
 
     this.jid = stanzaClient.jid;
@@ -142,6 +146,10 @@ class JingleSessionManager extends WildEmitter {
 
   proxyEvents () {
     this.jingleJs.on('send', data => {
+      if (data.jingle && data.jingle.sid && this.ignoredSessions.get(data.jingle.sid)) {
+        this.logger.debug('Ignoring outbound stanza for ignored session', data.jingle.sid);
+        return;
+      }
       this.emit('send', data);
     });
 
@@ -396,7 +404,7 @@ class JingleSessionManager extends WildEmitter {
         delete this.pendingSessions[sessionId];
       }.bind(this),
 
-      rejectRtcSession: function (sessionId) {
+      rejectRtcSession: function (sessionId, ignore) {
         let reject, session;
         session = this.pendingSessions[sessionId];
         if (!session) {
@@ -406,15 +414,19 @@ class JingleSessionManager extends WildEmitter {
           );
           return;
         }
-        reject = {
-          to: this.jid.bare().toString(),
-          reject: {
-            id: sessionId
-          }
-        };
-        this.emit('send', reject);
-        reject.to = session.from.toString();
-        this.emit('send', reject);
+        if (ignore) {
+          this.ignoredSessions.set(sessionId, true);
+        } else {
+          reject = {
+            to: this.jid.bare().toString(),
+            reject: {
+              id: sessionId
+            }
+          };
+          this.emit('send', reject);
+          reject.to = session.from.toString();
+          this.emit('send', reject);
+        }
         delete this.pendingSessions[sessionId];
       }.bind(this)
     };
@@ -487,10 +499,14 @@ class JingleSessionManager extends WildEmitter {
           } else {
             return; // this is an error or result for a stanza we did not send
           }
-
-          // the core of handling jingle stanzas is to feed them to jinglejs
         }
 
+        if (stanza.jingle && stanza.jingle.sid && this.ignoredSessions.get(stanza.jingle.sid)) {
+          this.logger.debug('Ignoring inbound stanza for ignored webrtc session', stanza.jingle.sid);
+          return;
+        }
+
+        // the core of handling jingle stanzas is to feed them to jinglejs
         this.jingleJs.process(stanza);
       }.bind(this),
 

@@ -160,7 +160,7 @@ test('handleMessage should call checkStanza function', t => {
 
 test('handleIq should call checkStanza function', t => {
   sandbox.stub(sessionManager, 'checkStanza').callsFake(stanza => stanza);
-  sessionManager.handleIq(jingleActionStanza);
+  sessionManager.handleIq(jingleActionStanza.toJSON());
   t.is(sessionManager.checkStanza.called, true);
 });
 
@@ -168,10 +168,51 @@ test.serial('it should register for jingle events', async t => {
   const p = new Promise((resolve) => {
     sandbox.stub(sessionManager.jingleJs, 'process').callsFake(resolve);
   });
-  sessionManager.stanzaClient.emit('iq:set:jingle', jingleActionStanza);
+  sessionManager.stanzaClient.emit('iq:set:jingle', jingleActionStanza.toJSON());
   await p;
   t.is(sessionManager.jingleJs.process.calledOnce, true);
-  t.is(sessionManager.jingleJs.process.calledWith(jingleActionStanza), true);
+  t.is(sessionManager.jingleJs.process.calledWith(jingleActionStanza.toJSON()), true);
+});
+
+test.serial('it should not process jingle events for ignored sessions', async t => {
+  sandbox.stub(sessionManager.jingleJs, 'process');
+  const p = new Promise((resolve) => {
+    sandbox.stub(sessionManager.logger, 'debug').callsFake(resolve);
+  });
+  sessionManager.ignoredSessions.set(jingleActionStanza.toJSON().jingle.sid, true);
+  sessionManager.stanzaClient.emit('iq:set:jingle', jingleActionStanza.toJSON());
+  await p;
+  t.is(sessionManager.jingleJs.process.notCalled, true);
+});
+
+test.serial('it should send stanzas emitted by jinglejs', async t => {
+  const sentStanza = jingleActionStanza.toJSON();
+  t.plan(1);
+  const p = new Promise(resolve => {
+    sessionManager.on('send', stanza => {
+      t.is(stanza, sentStanza);
+      resolve();
+    });
+  });
+  sessionManager.jingleJs.emit('send', sentStanza);
+  return p;
+});
+
+test.serial('it should not send stanzas emitted by jinglejs if the session is ignored', async t => {
+  const sentStanza = jingleActionStanza.toJSON();
+  t.plan(1);
+  const p = new Promise((resolve, reject) => {
+    sessionManager.on('send', stanza => {
+      reject(new Error('Send should not have been called'));
+    });
+    sinon.stub(sessionManager.logger, 'debug').callsFake(l => {
+      t.is(l, 'Ignoring outbound stanza for ignored session');
+      resolve();
+    });
+  });
+  sessionManager.ignoredSessions.set(jingleActionStanza.toJSON().jingle.sid, true);
+  sessionManager.jingleJs.emit('send', sentStanza);
+  return p;
 });
 
 test('handleEndRtcSessionsWithJid should return undefined if jid not in peerId', t => {
@@ -293,71 +334,6 @@ test('createRtcSession should addSession and start', t => {
   t.is(sessionManager.jingleJs.addSession.called, true);
 });
 
-// test('initiateRtcSession should emit a message if not conference', t => {
-//   t.plan(5);
-//   const options = {
-//     opts: {
-//       jid: 'flashbang@storm.net',
-//       stream: {
-//         getTracks: () => {
-//           return [
-//             {
-//               stop: () => {}
-//             }
-//           ];
-//         }
-//       }
-//     },
-//     callback: () => {}
-//   };
-//   const dataExpected = {
-//     to: 'flashbang@storm.net',
-//     propose: {
-//       descriptions: [
-//         {
-//           media: undefined
-//         }
-//       ]
-//     }
-//   };
-//   sandbox.stub(sessionManager, 'emit').callsFake((event, data, message) => {
-//     t.is(message, true);
-//     t.is(event, 'send');
-//     t.is(data.to, dataExpected.to);
-//   });
-//   const proposeId = sessionManager.expose.initiateRtcSession(options);
-//   t.is(sessionManager.emit.called, true);
-//   t.truthy(proposeId);
-// });
-
-// test('initiateRtcSession should emit an iq if conference', t => {
-//   t.plan(5);
-//   const opts = {
-//     opts: {
-//       jid: 'peer1@conference',
-//       stream: {
-//         getTracks: () => {
-//           return [
-//             {
-//               stop: () => {},
-//               kind: 'audio'
-//             }
-//           ];
-//         }
-//       }
-//     },
-//     callback: () => {}
-//   };
-//   sandbox.stub(sessionManager, 'emit').callsFake((event, data, message) => {
-//     t.is(message, undefined);
-//     t.is(event, 'updateMediaPresence');
-//     t.deepEqual(data.mediaDescriptions, [ { media: 'audio' } ]);
-//   });
-//   const proposeId = sessionManager.expose.initiateRtcSession(opts);
-//   t.is(sessionManager.emit.called, true);
-//   t.truthy(proposeId);
-// });
-
 test('endRtcSessions should call endAllSessions if no jid', t => {
   t.plan(1);
   const opts = {
@@ -368,19 +344,6 @@ test('endRtcSessions should call endAllSessions if no jid', t => {
   sessionManager.expose.endRtcSessions(opts);
   t.is(sessionManager.jingleJs.endAllSessions.called, true);
 });
-
-// test('endRtcSessions should call handleEndRtcSessionsWithJid if there is a jid', t => {
-//   t.plan(1);
-//   const opts = {
-//     opts: {
-//       jid: 'peer1@conference'
-//     },
-//     callback: () => {}
-//   };
-//   sessionManager.handleEndRtcSessionsWithJid = sandbox.stub();
-//   sessionManager.expose.endRtcSessions(opts);
-//   t.is(sessionManager.handleEndRtcSessionsWithJid.called, true);
-// });
 
 test('cancelRtcSession should emit error if no session provided', t => {
   t.plan(2);

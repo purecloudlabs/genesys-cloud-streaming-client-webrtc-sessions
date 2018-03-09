@@ -65,6 +65,7 @@
     "jingle-purecloud": "^3.0.0",
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
+    "lru-cache": "^4.1.2",
     "stanza.io": "^8.4.3",
     "uuid": "^3.1.0",
     "wildemitter": "^1.2.0"
