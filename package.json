@@ -62,7 +62,7 @@
   "dependencies": {
     "jingle-media-data-session-purecloud": "^3.0.0",
     "jingle-media-session-purecloud": "^3.0.0",
-    "jingle-purecloud": "^3.0.0",
+    "jingle-purecloud": "^4.0.0",
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
     "lru-cache": "^4.1.2",
