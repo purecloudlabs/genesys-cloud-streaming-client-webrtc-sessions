@@ -38,8 +38,6 @@ const STANZA_EVENTS = [
 const guard = require('../utils').guard;
 
 function prepareSession (options) {
-  options.signalEndOfCandidates = options.signalEndOfCandidates || true;
-
   if (options.peerID.toString().indexOf('@conference') > -1) {
     const session = new MediaSession(options);
 
@@ -117,9 +115,15 @@ class JingleSessionManager extends WildEmitter {
     stanzaClient.stanzas.extendPresence(MediaPresence);
 
     this.iceServers = clientOptions.iceServers || [];
+    this.clientOptions = clientOptions;
     this.jingleJs = new Jingle({
       iceServers: this.iceServers,
-      prepareSession: prepareSession
+      prepareSession: options => {
+        options = options || {};
+        options.signalEndOfCandidates = this.clientOptions.signalEndOfCandidates !== false;
+        options.signalIceConnected = !!this.clientOptions.signalIceConnected;
+        return prepareSession(options);
+      }
     });
     this.pendingSessions = {};
 
@@ -248,7 +252,8 @@ class JingleSessionManager extends WildEmitter {
             parent: this.jingleJs,
             iceServers: this.jingleJs.iceServers,
             constraints: peerConnectionConstraints,
-            signalEndOfCandidates: true
+            signalEndOfCandidates: this.clientOptions.signalEndOfCandidates !== false,
+            signalIceConnected: !!this.clientOptions.signalIceConnected
           };
 
           if (peerConstraints.offerToReceiveAudio || peerConstraints.offerToReceiveVideo) {

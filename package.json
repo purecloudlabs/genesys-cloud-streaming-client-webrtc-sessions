@@ -56,12 +56,12 @@
   "publishConfig": {
     "registry": "https://purecloud.artifactoryonline.com/purecloud/api/npm/inin-internal-npm-dev/"
   },
-  "author": "Xander Dumaine, Jean-Marcel Belmont",
+  "author": "Xander Dumaine",
   "license": "MIT",
   "homepage": "https://bitbucket.org/inindca/firehose-webrtc-sessions#readme",
   "dependencies": {
     "jingle-media-data-session-purecloud": "^3.0.0",
-    "jingle-media-session-purecloud": "^3.0.0",
+    "jingle-media-session-purecloud": "^3.1.0",
     "jingle-purecloud": "^4.0.0",
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
