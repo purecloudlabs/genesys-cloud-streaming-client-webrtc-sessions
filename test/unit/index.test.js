@@ -138,13 +138,46 @@ test('sessionManager should take in a stanzaClient and clientOptions', t => {
 
 test('prepareSession should return Media session', t => {
   t.plan(1);
-  const options = {
-    signalEndOfCandidates: true,
-    peerID: 'somebody@conference'
+  sessionManager.clientOptions = {
+    signalEndOfCandidates: true
   };
-  const prepareSession = sessionManager.jingleJs.prepareSession(options);
-  const message = prepareSession.emit('addChannel', { message: 'channel1' });
+  const mediaSession = sessionManager.jingleJs.prepareSession({peerID: 'somebody@conference'});
+  const message = mediaSession.emit('addChannel', { message: 'channel1' });
   t.is(message.peerID, 'somebody@conference');
+});
+
+test('media session should emit end of candidates', t => {
+  t.plan(1);
+  sessionManager.clientOptions = {
+    signalEndOfCandidates: true
+  };
+  const mediaSession = sessionManager.jingleJs.prepareSession({peerID: 'somebody@conference'});
+  const message = mediaSession.emit('addChannel', { message: 'channel1' });
+  t.is(message.peerID, 'somebody@conference');
+
+  sinon.spy(mediaSession, 'onIceEndOfCandidates');
+  sinon.spy(mediaSession, 'send');
+  mediaSession.pc.pc.iceConnectionState = 'checking';
+  mediaSession.pc.emit('iceConnectionStateChange');
+  sinon.assert.calledOnce(mediaSession.onIceEndOfCandidates);
+  sinon.assert.notCalled(mediaSession.send);
+});
+
+test('media session should emit connected event', t => {
+  t.plan(1);
+  sessionManager.clientOptions = {
+    signalIceConnected: true
+  };
+  const mediaSession = sessionManager.jingleJs.prepareSession({peerID: 'somebody@conference'});
+  const message = mediaSession.emit('addChannel', { message: 'channel1' });
+  t.is(message.peerID, 'somebody@conference');
+
+  sinon.spy(mediaSession, 'onIceEndOfCandidates');
+  sinon.stub(mediaSession, 'send').callsFake(() => {});
+  mediaSession.pc.pc.iceConnectionState = 'connected';
+  mediaSession.pc.emit('iceConnectionStateChange');
+  sinon.assert.notCalled(mediaSession.onIceEndOfCandidates);
+  sinon.assert.calledOnce(mediaSession.send);
 });
 
 test('checkStanza should call the appropriate handler', t => {
