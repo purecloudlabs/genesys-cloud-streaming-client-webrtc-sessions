@@ -80,8 +80,8 @@
     "jxt": "^3.0.8",
     "jxt-xmpp": "^2.4.0",
     "jxt-xmpp-types": "^3.0.0",
-    "nyc": "^11.0.3",
-    "semistandard": "^11.0.0",
+    "nyc": "^13.0.0",
+    "semistandard": "^12.0.1",
     "sinon": "^2.3.8",
     "webpack": "^3.5.4"
   }
