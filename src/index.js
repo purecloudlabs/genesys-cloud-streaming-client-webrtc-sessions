@@ -82,7 +82,7 @@ class JingleSessionManager extends WildEmitter {
         element: 'description',
         tags: ['jingle-application'],
         fields: {
-          applicationType: { value: 'datachannel' }
+          applicationType: { value: 'datachannel', writable: true }
         }
       }));
     });
