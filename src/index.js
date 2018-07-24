@@ -299,7 +299,7 @@ class JingleSessionManager extends WildEmitter {
             type: mediaDescriptions.length ? 'upgradeMedia' : 'available',
             to: opts.jid,
             id: uuid(),
-            from: this.stanzaClient.config.jid,
+            from: this.stanzaClient.jid.full,
             media: {
               conversationId: opts.conversationId,
               sourceCommunicationId: opts.sourceCommunicationId,
