@@ -12,9 +12,6 @@ module.exports = {
     library: 'firehose-webrtc-sessions',
     libraryTarget: 'umd'
   },
-  optimization: {
-    minimize: false
-  },
   module: {
     rules: [
       {
