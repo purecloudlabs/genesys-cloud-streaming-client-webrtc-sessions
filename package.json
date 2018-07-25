@@ -8,7 +8,8 @@
   ],
   "files": [
     "src",
-    "dist/firehose-webrtc-sessions.js"
+    "dist/firehose-webrtc-sessions.js",
+    "dist/firehose-webrtc-sessions.js.map"
   ],
   "scripts": {
     "build:dist": "webpack --env=prod --progress --profile --colors",
