@@ -5,6 +5,7 @@ const path = require('path');
 module.exports = {
   target: 'node',
   entry: './src/index.js',
+  devtool: 'source-map',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'firehose-webrtc-sessions.js',
