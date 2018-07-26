@@ -6,9 +6,13 @@ module.exports = {
   target: 'node',
   entry: './src/index.js',
   devtool: 'source-map',
+  mode: process.env.MINIMIZE ? 'production' : 'development',
+  optimization: {
+    minimize: !!process.env.MINIMIZE
+  },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'firehose-webrtc-sessions.js',
+    filename: process.env.MINIMIZE ? 'firehose-webrtc-sessions.min.js' : 'firehose-webrtc-sessions.js',
     library: 'firehose-webrtc-sessions',
     libraryTarget: 'umd'
   },
@@ -19,7 +23,7 @@ module.exports = {
         exclude: /(node_modules|bower_components)/,
         loader: 'babel-loader',
         query: {
-          presets: ['es2015']
+          presets: ['env']
         }
       }
     ]
