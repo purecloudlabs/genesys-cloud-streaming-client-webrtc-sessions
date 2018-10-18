@@ -1,5 +1,5 @@
 {
-  "name": "@purecloud/streaming-client-webrtc-sessions",
+  "name": "purecloud-streaming-client-webrtc-sessions",
   "version": "6.0.0",
   "description": "WebRTC Extensions for the PureCloud Streaming Client SDK",
   "main": "dist/webrtc-sessions.js",
