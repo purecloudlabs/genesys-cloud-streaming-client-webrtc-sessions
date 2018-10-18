@@ -14,7 +14,6 @@
   "scripts": {
     "build": "webpack && webpack --env.production",
     "unit-test": "nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
-    "prepublish": "npm run build && npm run test",
     "test": "npm run semistandard && npm run unit-test && npm run report",
     "report": "nyc report",
     "semistandard": "semistandard",
