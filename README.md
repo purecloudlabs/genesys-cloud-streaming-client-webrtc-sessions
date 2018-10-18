@@ -1,8 +1,8 @@
-# Firehose Webrtc Sessions
+# PureCloud Streaming Client WebRTC Sessions
 
 ## Overview
 
-This library exposes API methods and emits events for firehose-client to consume
+This library exposes API methods and emits events for @purecloud/streaming-client to consume
 
 ## Installation
 

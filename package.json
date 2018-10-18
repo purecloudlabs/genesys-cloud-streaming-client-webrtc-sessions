@@ -1,20 +1,20 @@
 {
-  "name": "firehose-webrtc-sessions",
-  "version": "4.1.5",
-  "description": "Firehose Webrtc Session API",
-  "main": "dist/firehose-webrtc-sessions.js",
+  "name": "@purecloud/streaming-client-webrtc-sessions",
+  "version": "6.0.0",
+  "description": "WebRTC Extensions for the PureCloud Streaming Client SDK",
+  "main": "dist/webrtc-sessions.js",
   "pre-push": [
     "test"
   ],
   "files": [
     "src",
-    "dist/firehose-webrtc-sessions.js",
-    "dist/firehose-webrtc-sessions.js.map"
+    "dist/webrtc-sessions.js",
+    "dist/webrtc-sessions.js.map"
   ],
   "scripts": {
-    "build:dist": "webpack --env=prod --progress --profile --colors",
+    "build": "webpack && webpack --env.production",
     "unit-test": "nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
-    "prepublish": "npm run build:dist && npm run test",
+    "prepublish": "npm run build && npm run test",
     "test": "npm run semistandard && npm run unit-test && npm run report",
     "report": "nyc report",
     "semistandard": "semistandard",
@@ -47,19 +47,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://bitbucket.org/inindca/firehose-webrtc-sessions.git"
+    "url": "git+https://github.com/purecloudlabs/purecloud-streaming-client-webrtc-sessions.git"
   },
   "keywords": [
     "jingle",
     "xmpp",
-    "firehose"
+    "streaming",
+    "websocket",
+    "signaling",
+    "webrtc"
   ],
-  "publishConfig": {
-    "registry": "https://purecloud.artifactoryonline.com/purecloud/api/npm/inin-internal-npm-dev/"
-  },
   "author": "Xander Dumaine",
   "license": "MIT",
-  "homepage": "https://bitbucket.org/inindca/firehose-webrtc-sessions#readme",
+  "homepage": "https://github.com/purecloudlabs/purecloud-streaming-client-webrtc-sessions#readme",
   "dependencies": {
     "jingle-media-data-session-purecloud": "^3.0.0",
     "jingle-media-session-purecloud": "^3.1.0",

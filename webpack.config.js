@@ -1,31 +1,30 @@
-'use strict';
-
 const path = require('path');
 
-module.exports = {
-  target: 'node',
-  entry: './src/index.js',
-  devtool: 'source-map',
-  mode: process.env.MINIMIZE ? 'production' : 'development',
-  optimization: {
-    minimize: !!process.env.MINIMIZE
-  },
-  output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: process.env.MINIMIZE ? 'firehose-webrtc-sessions.min.js' : 'firehose-webrtc-sessions.js',
-    library: 'firehose-webrtc-sessions',
-    libraryTarget: 'umd'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        exclude: /(node_modules|bower_components)/,
-        loader: 'babel-loader',
-        query: {
-          presets: ['env']
+module.exports = (env) => {
+  const minimize = env && env.production;
+  return {
+    entry: './src/index.js',
+    mode: minimize ? 'production' : 'development',
+    optimization: {
+      minimize
+    },
+    devtool: 'source-map',
+    output: {
+      path: path.resolve(__dirname, 'dist'),
+      filename: minimize ? 'webrtc-sessions.min.js' : 'webrtc-sessions.js',
+      library: 'pc-streaming',
+      libraryTarget: 'umd'
+    },
+    module: {
+      rules: [
+        {
+          test: /\.js$/,
+          loader: 'babel-loader',
+          query: {
+            presets: ['env']
+          }
         }
-      }
-    ]
-  }
+      ]
+    }
+  };
 };
