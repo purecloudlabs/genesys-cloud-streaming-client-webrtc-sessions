@@ -65,18 +65,20 @@ function prepareSession (options) {
 }
 
 class JingleSessionManager extends WildEmitter {
-  constructor (stanzaClient, clientOptions = {}) {
+  constructor (client, clientOptions = {}) {
     super();
 
-    stanzaClient.disco.addFeature('urn:xmpp:jingle:1');
+    const stanzaio = client._stanzaio;
+
+    stanzaio.disco.addFeature('urn:xmpp:jingle:1');
     if (typeof window !== 'undefined' && window.RTCPeerConnection) {
-      CAPABILITIES.forEach(c => stanzaClient.disco.addFeature(c));
+      CAPABILITIES.forEach(c => stanzaio.disco.addFeature(c));
     }
 
     // Define an extension for Jingle RTP for Data Channel, since jingle-xmpp-types
     // does not have it, for some reason
-    stanzaClient.stanzas.withDefinition('content', 'urn:xmpp:jingle:1', function (Content) {
-      stanzaClient.stanzas.extend(Content, stanzaClient.stanzas.define({
+    stanzaio.stanzas.withDefinition('content', 'urn:xmpp:jingle:1', function (Content) {
+      stanzaio.stanzas.extend(Content, stanzaio.stanzas.define({
         name: '_datachannel',
         namespace: 'urn:xmpp:jingle:transports:webrtc-datachannel:0',
         element: 'description',
@@ -88,8 +90,8 @@ class JingleSessionManager extends WildEmitter {
     });
 
     // Define an extension for presence to support our proprietary media presence
-    const attribute = stanzaClient.stanzas.utils.attribute;
-    const MediaStream = stanzaClient.stanzas.define({
+    const attribute = stanzaio.stanzas.utils.attribute;
+    const MediaStream = stanzaio.stanzas.define({
       name: 'mediastream',
       tags: ['mediastream'],
       element: 'mediastream',
@@ -100,7 +102,7 @@ class JingleSessionManager extends WildEmitter {
       }
     });
 
-    const MediaPresence = stanzaClient.stanzas.define({
+    const MediaPresence = stanzaio.stanzas.define({
       name: 'media',
       namespace: 'orgspan:mediastream',
       element: 'x',
@@ -111,8 +113,8 @@ class JingleSessionManager extends WildEmitter {
       }
     });
 
-    stanzaClient.stanzas.extend(MediaPresence, MediaStream, 'mediaStreams');
-    stanzaClient.stanzas.extendPresence(MediaPresence);
+    stanzaio.stanzas.extend(MediaPresence, MediaStream, 'mediaStreams');
+    stanzaio.stanzas.extendPresence(MediaPresence);
 
     this.iceServers = clientOptions.iceServers || [];
     this.clientOptions = clientOptions;
@@ -132,9 +134,9 @@ class JingleSessionManager extends WildEmitter {
 
     this.logger = clientOptions.logger || console;
 
-    this.jid = stanzaClient.jid;
+    this.jid = stanzaio.jid;
 
-    stanzaClient.on('disconnect', () => {
+    stanzaio.on('disconnect', () => {
       if (clientOptions.rtcSessionSurvivability !== true) {
         this.pendingSessions = {};
         this.pendingIqs = {};
@@ -142,9 +144,9 @@ class JingleSessionManager extends WildEmitter {
       }
     });
 
-    this.stanzaClient = stanzaClient;
+    this.client = client;
 
-    STANZA_EVENTS.forEach(e => stanzaClient.on(e, this.stanzaHandlers.jingle.bind(this)));
+    STANZA_EVENTS.forEach(e => stanzaio.on(e, this.stanzaHandlers.jingle.bind(this)));
     this.proxyEvents();
   }
 
@@ -294,12 +296,12 @@ class JingleSessionManager extends WildEmitter {
             mediaDescriptions = [ { media: 'listener' } ];
           }
 
-          const Presence = this.stanzaClient.stanzas.getPresence();
+          const Presence = this.client._stanzaio.stanzas.getPresence();
           const mediaPresence = {
             type: mediaDescriptions.length ? 'upgradeMedia' : 'available',
             to: opts.jid,
             id: uuid(),
-            from: this.stanzaClient.jid.full,
+            from: this.client._stanzaio.jid.full,
             media: {
               conversationId: opts.conversationId,
               sourceCommunicationId: opts.sourceCommunicationId,
@@ -316,7 +318,7 @@ class JingleSessionManager extends WildEmitter {
             mediaStreamDescription[mediaDescription.media] = 'true';
           }
 
-          this.stanzaClient.send(new Presence(mediaPresence));
+          this.client._stanzaio.send(new Presence(mediaPresence));
         } else {
           this.emit('send', session, true); // send as Message
           this.pendingSessions[session.propose.id] = session;

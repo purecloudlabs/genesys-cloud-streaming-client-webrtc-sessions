@@ -42,7 +42,7 @@ const MOCK_JXT = {
 test.beforeEach(() => {
   global.RTCPeerConnection = MockRTCPeerConnection();
   global.MediaSession = MockMediaSession();
-  const stanzaClient = {
+  const stanzaio = {
     callbacks: {},
     on (e, callback) {
       this.callbacks[e] = this.callbacks[e] || [];
@@ -112,7 +112,7 @@ test.beforeEach(() => {
       }
     };
   });
-  sessionManager = new SessionManager(stanzaClient);
+  sessionManager = new SessionManager({ _stanzaio: stanzaio });
 });
 
 test.afterEach(() => {
@@ -121,9 +121,9 @@ test.afterEach(() => {
   sandbox.restore();
 });
 
-test('sessionManager should take in a stanzaClient and clientOptions', t => {
+test('sessionManager should take in a client with a stanzaio property and clientOptions', t => {
   t.plan(1);
-  const stanzaClient = {
+  const stanzaio = {
     on () {},
     disco: { addFeature () {} },
     stanzas: MOCK_JXT
@@ -132,7 +132,7 @@ test('sessionManager should take in a stanzaClient and clientOptions', t => {
     iceServers: [],
     logger: () => {}
   };
-  sessionManager = new SessionManager(stanzaClient, clientOptions);
+  sessionManager = new SessionManager({ _stanzaio: stanzaio }, clientOptions);
   t.truthy(sessionManager);
 });
 
@@ -201,7 +201,7 @@ test.serial('it should register for jingle events', async t => {
   const p = new Promise((resolve) => {
     sandbox.stub(sessionManager.jingleJs, 'process').callsFake(resolve);
   });
-  sessionManager.stanzaClient.emit('iq:set:jingle', jingleActionStanza.toJSON());
+  sessionManager.client._stanzaio.emit('iq:set:jingle', jingleActionStanza.toJSON());
   await p;
   t.is(sessionManager.jingleJs.process.calledOnce, true);
   t.is(sessionManager.jingleJs.process.calledWith(jingleActionStanza.toJSON()), true);
@@ -213,7 +213,7 @@ test.serial('it should not process jingle events for ignored sessions', async t 
     sandbox.stub(sessionManager.logger, 'debug').callsFake(resolve);
   });
   sessionManager.ignoredSessions.set(jingleActionStanza.toJSON().jingle.sid, true);
-  sessionManager.stanzaClient.emit('iq:set:jingle', jingleActionStanza.toJSON());
+  sessionManager.client._stanzaio.emit('iq:set:jingle', jingleActionStanza.toJSON());
   await p;
   t.is(sessionManager.jingleJs.process.notCalled, true);
 });
