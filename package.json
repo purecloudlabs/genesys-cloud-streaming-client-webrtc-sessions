@@ -13,11 +13,12 @@
   ],
   "scripts": {
     "build": "webpack && webpack --env.production",
-    "unit-test": "nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
-    "test": "npm run semistandard && npm run unit-test && npm run report",
-    "report": "nyc report",
+    "unit-test": "NODE_ENV=test nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
+    "test": "semistandard && npm run unit-test && npm run report",
     "semistandard": "semistandard",
-    "semistandard:fix": "semistandard --fix"
+    "semistandard:fix": "semistandard --fix",
+    "report": "nyc report && nyc check-coverage --lines 100 --functions 100 --branches 100 --statements 100",
+    "watch-tests": "watch 'npm test' src test"
   },
   "semistandard": {
     "ignore": [
@@ -30,7 +31,14 @@
   "babel": {
     "presets": [
       "env"
-    ]
+    ],
+    "env": {
+      "test": {
+        "plugins": [
+          "istanbul"
+        ]
+      }
+    }
   },
   "ava": {
     "files": [],
@@ -43,6 +51,13 @@
       "babel-register",
       "./test/helpers/setup-browser-env.js"
     ]
+  },
+  "nyc": {
+    "require": [
+      "babel-register"
+    ],
+    "sourceMap": false,
+    "instrument": false
   },
   "repository": {
     "type": "git",
@@ -74,14 +89,16 @@
     "ava": "^0.25.0",
     "babel-core": "^6.25.0",
     "babel-loader": "^7.1.1",
+    "babel-plugin-istanbul": "^4.1.6",
     "babel-preset-env": "^1.6.1",
     "browser-env": "^3.1.0",
     "jxt": "^3.0.8",
     "jxt-xmpp": "^3.2.2",
     "jxt-xmpp-types": "^3.0.0",
     "nyc": "^13.0.0",
-    "semistandard": "^12.0.1",
+    "semistandard": "^13.0.1",
     "sinon": "^2.3.8",
+    "watch": "^1.0.2",
     "webpack": "^4.16.2",
     "webpack-cli": "^3.1.0"
   }

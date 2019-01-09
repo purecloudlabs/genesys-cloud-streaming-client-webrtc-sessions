@@ -4,8 +4,7 @@ const test = require('ava');
 const sinon = require('sinon');
 
 const {
-  logger,
-  guard
+  logger
 } = require('../../utils');
 
 let sandbox;
@@ -39,27 +38,4 @@ test('error should print error level information to the console', t => {
 test('info should print info level information to the console', t => {
   logger.info('An info level log has been issued');
   t.is(logger.info.called, true);
-});
-
-test('guard should return a value if there is a value and it is not null', t => {
-  t.plan(2);
-  const actual = guard(
-    {
-      jid: 'myuniquejid@somebody.com'
-    },
-    v => v
-  );
-  const expected = {
-    jid: 'myuniquejid@somebody.com'
-  };
-  t.deepEqual(actual, expected);
-
-  const actual2 = guard(
-    {
-      data: '1234abvdffd@@55555555'
-    },
-    d => d.data
-  );
-  const expected2 = '1234abvdffd@@55555555';
-  t.is(actual2, expected2);
 });

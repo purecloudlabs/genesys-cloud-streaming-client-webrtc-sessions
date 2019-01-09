@@ -3,6 +3,7 @@
 const test = require('ava');
 const sinon = require('sinon');
 const jingleStanza = require('jingle-stanza');
+const WildEmitter = require('wildemitter');
 
 const {
   events
@@ -10,13 +11,11 @@ const {
 
 const {
   jingleActionStanza,
-  iceServersStanza,
   jingleMessageInitStanza,
   jingleMessageRetractStanza,
   jingleMessageAcceptStanza,
   jingleMessageProceedStanza,
-  jingleMessageRejectStanza,
-  upgradeErrorStanza
+  jingleMessageRejectStanza
 } = require('../data');
 
 const {
@@ -30,88 +29,38 @@ let sessionManager;
 let sandbox;
 
 const MOCK_JXT = {
-  withDefinition () {},
+  withDefinition (label, xmlns, fn) { fn(); },
   utils: {
     attribute () {}
   },
   define () {},
   extend () {},
-  extendPresence () {}
+  extendPresence () {},
+  use () {},
+  getPresence: () => function (data) { this.data = data; }
 };
 
+class MockStanzaIo extends WildEmitter {
+  constructor (jid) {
+    super();
+    this.jid = {
+      bare: jid,
+      toString: () => jid + '/asdf',
+      full: jid + '/asdf'
+    };
+    this.disco = { addFeature () {} };
+    this.stanzas = MOCK_JXT;
+  }
+
+  send () {}
+}
+
 test.beforeEach(() => {
+  global.window = global;
   global.RTCPeerConnection = MockRTCPeerConnection();
   global.MediaSession = MockMediaSession();
-  const stanzaio = {
-    callbacks: {},
-    on (e, callback) {
-      this.callbacks[e] = this.callbacks[e] || [];
-      this.callbacks[e].push(callback);
-    },
-    jid: {
-      bare: () => 'theOneJidToRuleThemAll12345'
-    },
-    disco: {
-      addFeature () {}
-    },
-    stanzas: MOCK_JXT,
-    emit (e, ...args) {
-      (this.callbacks[e] || []).forEach(fn => fn(...args));
-    }
-  };
+  const stanzaio = new MockStanzaIo('theOneJidToRuleThemAll12345');
   sandbox = sinon.sandbox.create();
-  sandbox.stub(jingleStanza, 'getData').callsFake(jid => {
-    return {
-      from: {
-        bare: () => {},
-        full: 'I am full'
-      },
-      propose: {
-        id: 'random1234'
-      },
-      ofrom: {
-        full: 'full5555'
-      },
-      retract: {
-        id: 'retractedId'
-      },
-      accept: {
-        id: 'myAcceptedId'
-      },
-      proceed: {
-        id: 'proceedId'
-      },
-      reject: {
-        id: 'rejectedId'
-      },
-      toJSON: () => {
-        return {
-          from: {
-            bare: () => {},
-            full: 'I am full'
-          },
-          propose: {
-            id: 'random1234'
-          },
-          ofrom: {
-            full: 'full5555'
-          },
-          retract: {
-            id: 'retractedId'
-          },
-          accept: {
-            id: 'myAcceptedId'
-          },
-          proceed: {
-            id: 'proceedId'
-          },
-          reject: {
-            id: 'rejectedId'
-          }
-        };
-      }
-    };
-  });
   sessionManager = new SessionManager({ _stanzaio: stanzaio });
 });
 
@@ -136,23 +85,185 @@ test('sessionManager should take in a client with a stanzaio property and client
   t.truthy(sessionManager);
 });
 
+test('sessionManager should allow for rtcSessionSurvivability = true', t => {
+  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const clientOptions = {
+    iceServers: [],
+    logger: () => {},
+    rtcSessionSurvivability: true
+  };
+  sinon.spy(client._stanzaio, 'on');
+  sessionManager = new SessionManager(client, clientOptions);
+
+  sinon.stub(sessionManager.jingleJs, 'endAllSessions');
+  sessionManager.pendingIqs = { foo: 'bar' };
+  sessionManager.pendingSessions = { foo: 'bar' };
+  client._stanzaio.emit('disconnect');
+
+  t.deepEqual(sessionManager.pendingIqs, { foo: 'bar' });
+  t.deepEqual(sessionManager.pendingSessions, { foo: 'bar' });
+  sinon.assert.notCalled(sessionManager.jingleJs.endAllSessions);
+
+  sessionManager.handleIq(); // no-op, but it has to exist
+});
+
+test('sessionManager should allow for rtcSessionSurvivability = false', t => {
+  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const clientOptions = {
+    iceServers: [],
+    logger: () => {},
+    rtcSessionSurvivability: false
+  };
+  sinon.spy(client._stanzaio, 'on');
+  sessionManager = new SessionManager(client, clientOptions);
+
+  sinon.stub(sessionManager.jingleJs, 'endAllSessions');
+  sessionManager.pendingIqs = { foo: 'bar' };
+  sessionManager.pendingSessions = { foo: 'bar' };
+  client._stanzaio.emit('disconnect');
+
+  t.deepEqual(sessionManager.pendingIqs, {});
+  t.deepEqual(sessionManager.pendingSessions, {});
+  sinon.assert.calledOnce(sessionManager.jingleJs.endAllSessions);
+
+  sessionManager.handleIq(); // no-op, but it has to exist
+});
+
+test('sessionManager will not support features of RTCPeerConnection is not defined', t => {
+  global.window.RTCPeerConnection = null;
+  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const clientOptions = {
+    iceServers: [],
+    logger: () => {}
+  };
+  sinon.spy(client._stanzaio.disco, 'addFeature');
+  sessionManager = new SessionManager(client, clientOptions);
+  sinon.assert.calledOnce(client._stanzaio.disco.addFeature); // only once, otherwise, lots of times
+});
+
+test('exposeEvents', t => {
+  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const clientOptions = {
+    iceServers: [],
+    logger: {
+      debug: sinon.stub()
+    }
+  };
+  sessionManager = new SessionManager(client, clientOptions);
+  t.deepEqual(sessionManager.stanzaEvents, ['iq:set:jingle', 'iq:get:jingle']);
+});
+
+test('proxyEvents should proxy specific events up from the jingle session manager', t => {
+  t.plan(6);
+  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const clientOptions = {
+    iceServers: [],
+    logger: {
+      debug: sinon.stub()
+    }
+  };
+  sessionManager = new SessionManager(client, clientOptions);
+
+  const mockError = '<error reason="invalid"/>';
+  sessionManager.on(events.RTCSESSION_ERROR, e => t.is(e, mockError));
+  sessionManager.jingleJs.emit('error', { error: mockError });
+
+  sessionManager.on(events.TRACE_RTCSESSION, (level, msg) => {
+    t.is(msg, mockError);
+    t.is(level, 'error');
+  });
+  sessionManager.jingleJs.emit('log:error', mockError);
+
+  const mockSession = {};
+  sessionManager.on(events.INCOMING_RTCSESSION, session => t.is(session, mockSession));
+  sessionManager.jingleJs.emit('incoming', mockSession);
+
+  sessionManager.on(events.OUTGOING_RTCSESSION_PROCEED, session => t.is(session, mockSession));
+  sessionManager.jingleJs.emit('outgoing', mockSession);
+
+  const mockStanzaData = { to: 'foo', from: 'bar' };
+  const sendHandler = data => t.is(data, mockStanzaData);
+  sessionManager.on('send', sendHandler);
+  sessionManager.jingleJs.emit('send', mockStanzaData);
+  sessionManager.off('send', sendHandler);
+
+  const mockIgnoredStanzaData = { to: 'foo', jingle: { sid: '1234' } };
+  sessionManager.ignoredSessions.set('1234', true);
+  sessionManager.jingleJs.emit('send', mockIgnoredStanzaData);
+  sinon.assert.calledOnce(sessionManager.logger.debug);
+});
+
 test('prepareSession should return Media session', t => {
-  t.plan(1);
   sessionManager.clientOptions = {
     signalEndOfCandidates: true
   };
-  const mediaSession = sessionManager.jingleJs.prepareSession({peerID: 'somebody@conference'});
-  const message = mediaSession.emit('addChannel', { message: 'channel1' });
-  t.is(message.peerID, 'somebody@conference');
+  const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
+  t.is(mediaSession.peerID, 'somebody@conference');
+});
+
+test.serial('prepareSession should wire up data channel events', async t => {
+  t.plan(3);
+  sessionManager.clientOptions = {
+    signalEndOfCandidates: true
+  };
+  const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
+  t.is(mediaSession.peerID, 'somebody@conference');
+  const mockChannel = { label: 'channel1' };
+  mediaSession.emit('addChannel', mockChannel);
+  const lastnEvent = new Promise(resolve => {
+    mediaSession.on(events.LASTN_CHANGE, (data) => {
+      t.is(data.foo, 'bar');
+      t.is(data.json, 'data');
+      resolve();
+    });
+  });
+  mockChannel.onmessage({ data: '{ "foo": "bar", "json": "data" }' });
+  mockChannel.onmessage({});
+  await lastnEvent;
+});
+
+test('prepareSession should create a MediaDataSession when appropriate', t => {
+  sessionManager.clientOptions = {
+    signalEndOfCandidates: true
+  };
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ 'rtp', 'datachannel' ]
+  });
+  t.is(mediaSession.peerID, 'somebody@example.com');
+  t.is(typeof mediaSession.getDataChannel, 'function');
+});
+
+test('prepareSession should create a MediaSession when appropriate', t => {
+  sessionManager.clientOptions = {
+    signalEndOfCandidates: true
+  };
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ 'rtp' ]
+  });
+  t.is(mediaSession.peerID, 'somebody@example.com');
+  t.is(typeof mediaSession.getDataChannel, 'undefined');
+});
+
+test('prepareSession should create a MediaSession when appropriate', t => {
+  sessionManager.clientOptions = {
+    signalEndOfCandidates: true
+  };
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ ]
+  });
+  t.is(mediaSession.peerID, 'somebody@example.com');
+  t.is(typeof mediaSession.getDataChannel, 'undefined');
 });
 
 test('media session should emit end of candidates', t => {
-  t.plan(1);
   sessionManager.clientOptions = {
     signalEndOfCandidates: true
   };
-  const mediaSession = sessionManager.jingleJs.prepareSession({peerID: 'somebody@conference'});
-  const message = mediaSession.emit('addChannel', { message: 'channel1' });
+  const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
+  const message = mediaSession.emit('addChannel', { id: 'channel1' });
   t.is(message.peerID, 'somebody@conference');
 
   sinon.spy(mediaSession, 'onIceEndOfCandidates');
@@ -164,12 +275,11 @@ test('media session should emit end of candidates', t => {
 });
 
 test('media session should emit connected event', t => {
-  t.plan(1);
   sessionManager.clientOptions = {
     signalIceConnected: true
   };
-  const mediaSession = sessionManager.jingleJs.prepareSession({peerID: 'somebody@conference'});
-  const message = mediaSession.emit('addChannel', { message: 'channel1' });
+  const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
+  const message = mediaSession.emit('addChannel', { id: 'channel1' });
   t.is(message.peerID, 'somebody@conference');
 
   sinon.spy(mediaSession, 'onIceEndOfCandidates');
@@ -180,21 +290,60 @@ test('media session should emit connected event', t => {
   sinon.assert.calledOnce(mediaSession.send);
 });
 
-test('checkStanza should call the appropriate handler', t => {
-  t.plan(0);
-  sessionManager.checkStanza(jingleStanza);
+test('message stanzas should check a stanza and handle it', t => {
+  const stanza = `
+    <message xmlns="jabber:client"
+              from="example-number@gjoll.us-east-1.inindca.com/a2b41aaf-23da-4166-9e05-37d1d2018565"
+              to="example-user@test-valve-1ym37mj1kao.orgspan.com">
+        <propose xmlns="urn:xmpp:jingle-message:0" id="a2b41aaf-23da-4166-9e05-37d1d2018565"
+                  inin-cid="2d6c2ec1-17a8-4b2f-8fb2-7161f097a98f"
+                  inin-persistent-cid="16677b89-099e-48cb-977a-bc0a917791d3"
+                  inin-autoanswer="true">
+            <description xmlns="urn:xmpp:jingle:apps:rtp:1" media="audio"></description>
+        </propose>
+    </message>
+  `;
+
+  sinon.spy(sessionManager, 'checkStanza');
+  sinon.stub(sessionManager.stanzaHandlers, 'jingleMessageInit');
+  sessionManager.client._stanzaio.emit('stream:data', jingleStanza.getData(stanza));
+  sinon.assert.calledOnce(sessionManager.checkStanza);
+  sinon.assert.calledOnce(sessionManager.stanzaHandlers.jingleMessageInit);
+
+  // handle message does nothing
+  sessionManager.handleMessage(stanza);
+  sinon.assert.calledOnce(sessionManager.checkStanza);
+  sinon.assert.calledOnce(sessionManager.stanzaHandlers.jingleMessageInit);
 });
 
-test('handleMessage should call checkStanza function', t => {
-  sandbox.stub(sessionManager, 'checkStanza').callsFake(stanza => stanza);
-  sessionManager.handleMessage(jingleActionStanza);
-  t.is(sessionManager.checkStanza.called, true);
+test('non message stanzas should not be checked or handled handle it', t => {
+  const stanza = `
+    <iq xmlns="jabber:client"
+              from="example-number@gjoll.us-east-1.inindca.com/a2b41aaf-23da-4166-9e05-37d1d2018565"
+              to="example-user@test-valve-1ym37mj1kao.orgspan.com">
+        <propose xmlns="urn:xmpp:jingle-message:0" id="a2b41aaf-23da-4166-9e05-37d1d2018565"
+                  inin-cid="2d6c2ec1-17a8-4b2f-8fb2-7161f097a98f"
+                  inin-persistent-cid="16677b89-099e-48cb-977a-bc0a917791d3"
+                  inin-autoanswer="true">
+            <description xmlns="urn:xmpp:jingle:apps:rtp:1" media="audio"></description>
+        </propose>
+    </iq>
+  `;
+
+  sinon.spy(sessionManager, 'checkStanza');
+  sessionManager.client._stanzaio.emit('stream:data', jingleStanza.getData(stanza));
+  sinon.assert.notCalled(sessionManager.checkStanza);
 });
 
-test('handleIq should call checkStanza function', t => {
-  sandbox.stub(sessionManager, 'checkStanza').callsFake(stanza => stanza);
-  sessionManager.handleIq(jingleActionStanza.toJSON());
-  t.is(sessionManager.checkStanza.called, true);
+test('invalid stanzas should not be checked or handled handle it', t => {
+  const stanza = `
+    <iq >
+    </iq>
+  `;
+
+  sinon.spy(sessionManager, 'checkStanza');
+  sessionManager.client._stanzaio.emit('stream:data', jingleStanza.getData(stanza));
+  sinon.assert.notCalled(sessionManager.checkStanza);
 });
 
 test.serial('it should register for jingle events', async t => {
@@ -248,7 +397,7 @@ test.serial('it should not send stanzas emitted by jinglejs if the session is ig
   return p;
 });
 
-test('handleEndRtcSessionsWithJid should return undefined if jid not in peerId', t => {
+test('handleEndRtcSessionsWithJid should return if jid not in peerId', t => {
   t.plan(2);
   const options = {
     jid: 'flashbang@storm.net',
@@ -262,22 +411,26 @@ test('handleEndRtcSessionsWithJid should return undefined if jid not in peerId',
   t.truthy(sessionManager.jingleJs.endPeerSessions.notCalled);
 });
 
-test('handleEndRtcSessionsWithJid should return result', t => {
-  t.plan(1);
+test('handleEndRtcSessionsWithJid should delete pending sessions', t => {
   const options = {
     jid: 'flashbang@storm.net',
     reason: 'smoky'
   };
   sessionManager.jingleJs.peers = { 'flashbang@storm.net': {} };
+  sessionManager.pendingSessions = {
+    'asdf': { to: 'flashbang@storm.net' },
+    'qwerty': { to: 'someoneElse@storm.net' }
+  };
   sandbox.stub(sessionManager.jingleJs, 'endPeerSessions');
   sessionManager.handleEndRtcSessionsWithJid(options);
-  t.truthy(sessionManager.jingleJs.endPeerSessions.called);
+  sinon.assert.calledOnce(sessionManager.jingleJs.endPeerSessions);
+  t.deepEqual(sessionManager.pendingSessions, { 'qwerty': { to: 'someoneElse@storm.net' } });
 });
 
 /* Exposed Methods on the extension */
 
 test('createRtcSession should emit error if an exception occurs when creating MediaDataSession', t => {
-  t.plan(0);
+  t.plan(1);
   const options = {
     jid: 'flashbang@storm.net',
     sid: 'mysmokyFlashBang',
@@ -287,24 +440,37 @@ test('createRtcSession should emit error if an exception occurs when creating Me
       offerToReceiveVideo: true
     },
     peerConnectionConstraints: {
-      'audio': true,
-      'video': {
-        'width': {
-          'min': '300',
-          'max': '640'
-        },
-        'height': {
-          'min': '200',
-          'max': '480'
-        }
-      }
+      optional: [ ]
     }
   };
-  sessionManager.expose.createRtcSession(options);
-  sandbox.stub(sessionManager, 'emit').callsFake((event, data) => {
-    t.is(event, events.RTCSESSION_ERROR);
-    t.is(data instanceof Error, true);
+
+  sinon.stub(sessionManager.jingleJs, 'addSession').callsFake(() => {
+    throw new Error('Intentional error');
   });
+
+  sessionManager.on(events.RTCSESSION_ERROR, err => {
+    t.is(err instanceof Error, true);
+  });
+  sessionManager.expose.createRtcSession(options);
+});
+
+test('createRtcSession uses defaults', t => {
+  t.plan(1);
+  const options = {
+    jid: 'flashbang@storm.net',
+    sid: 'mysmokyFlashBang',
+    stream: {}
+  };
+
+  sinon.stub(sessionManager.jingleJs, 'addSession').callsFake(session => {
+    sinon.stub(session, 'start').callsFake(constraints => {
+      t.deepEqual(constraints, {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      });
+    });
+  });
+  sessionManager.expose.createRtcSession(options);
 });
 
 test('createRtcSession should emit error if an exception occurs when creating MediaSession', t => {
@@ -367,15 +533,127 @@ test('createRtcSession should addSession and start', t => {
   t.is(sessionManager.jingleJs.addSession.called, true);
 });
 
+test('initiateRtcSession sends a presence for a conference', t => {
+  sinon.stub(sessionManager.client._stanzaio, 'send').callsFake(() => {});
+  sessionManager.expose.initiateRtcSession({
+    stream: { getTracks: () => [ { kind: 'audio' }, { kind: 'video' } ] },
+    mediaPurpose: 'screenRecording',
+    jid: 'example@conference.test.com'
+  });
+  sinon.assert.calledOnce(sessionManager.client._stanzaio.send);
+  sinon.assert.calledWith(sessionManager.client._stanzaio.send, {
+    data: {
+      type: 'upgradeMedia',
+      to: 'example@conference.test.com',
+      from: sessionManager.client._stanzaio.jid.full,
+      id: sinon.match.string,
+      media: {
+        conversationId: undefined,
+        sourceCommunicationId: undefined,
+        mediaStreams: [{
+          screenRecording: 'true',
+          audio: 'true',
+          video: 'true'
+        }]
+      }
+    }
+  });
+});
+
+test('initiateRtcSession sends a listener presence for a conference', t => {
+  sinon.stub(sessionManager.client._stanzaio, 'send');
+  sessionManager.expose.initiateRtcSession({
+    jid: 'example@conference.test.com'
+  });
+  sinon.assert.calledOnce(sessionManager.client._stanzaio.send);
+  sinon.assert.calledWith(sessionManager.client._stanzaio.send, {
+    data: {
+      type: 'upgradeMedia',
+      to: 'example@conference.test.com',
+      from: sessionManager.client._stanzaio.jid.full,
+      id: sinon.match.string,
+      media: {
+        conversationId: undefined,
+        sourceCommunicationId: undefined,
+        mediaStreams: [{
+          listener: 'true'
+        }]
+      }
+    }
+  });
+});
+
+test('initiateRtcSession sends a listener presence for a one:one', t => {
+  t.plan(3);
+  sinon.stub(sessionManager.client._stanzaio, 'send');
+  let pendingId;
+  sessionManager.on('send', stanza => {
+    t.truthy(stanza.propose.id);
+    pendingId = stanza.propose.id;
+    t.deepEqual(stanza.propose.descriptions, [ { media: 'audio' }, { media: 'video' } ]);
+  });
+  sessionManager.expose.initiateRtcSession({
+    stream: { getTracks: () => [ { kind: 'audio' }, { kind: 'video' } ] },
+    jid: 'example@test.com'
+  });
+  sinon.assert.notCalled(sessionManager.client._stanzaio.send);
+  t.truthy(sessionManager.pendingSessions[pendingId]);
+});
+
 test('endRtcSessions should call endAllSessions if no jid', t => {
-  t.plan(1);
-  const opts = {
-    opts: {},
-    callback: () => {}
-  };
   sessionManager.jingleJs.endAllSessions = sandbox.stub();
-  sessionManager.expose.endRtcSessions(opts);
+  sessionManager.expose.endRtcSessions();
   t.is(sessionManager.jingleJs.endAllSessions.called, true);
+});
+
+test('endRtcSessions should call endAllSessions if no jid with reason success by default', t => {
+  sessionManager.jingleJs.endAllSessions = sandbox.stub();
+  sessionManager.expose.endRtcSessions({}, () => {}, () => {});
+  sinon.assert.called(sessionManager.jingleJs.endAllSessions);
+  sinon.assert.calledWith(sessionManager.jingleJs.endAllSessions, 'success');
+});
+
+test('endRtcSessions should call callback', t => {
+  t.plan(2);
+  sessionManager.jingleJs.endAllSessions = sandbox.stub();
+  sessionManager.expose.endRtcSessions(() => t.pass());
+  t.is(sessionManager.jingleJs.endAllSessions.called, true);
+});
+
+test('endRtcSessions should call handleEndRtcSessionsWithJid if a jid is provided', t => {
+  sessionManager.jingleJs.endAllSessions = sandbox.stub();
+  sessionManager.jingleJs.endAllSessions = sandbox.stub();
+  sinon.stub(sessionManager, 'handleEndRtcSessionsWithJid');
+  sinon.stub(sessionManager, 'emit');
+
+  sessionManager.expose.endRtcSessions({ jid: 'someone@conference.test.com' });
+
+  sinon.assert.notCalled(sessionManager.jingleJs.endAllSessions);
+  sinon.assert.calledOnce(sessionManager.handleEndRtcSessionsWithJid);
+  sinon.assert.calledWith(sessionManager.handleEndRtcSessionsWithJid, {
+    jid: 'someone@conference.test.com',
+    reason: 'success'
+  });
+  sinon.assert.calledWith(sessionManager.emit, events.UPDATE_MEDIA_PRESENCE, {
+    opts: { jid: 'someone@conference.test.com' },
+    mediaDescriptions: [],
+    callback: sinon.match.func
+  });
+});
+
+test('endRtcSessions should call handleEndRtcSessionsWithJid if a jid is as a string', t => {
+  sessionManager.jingleJs.endAllSessions = sandbox.stub();
+  sessionManager.jingleJs.endAllSessions = sandbox.stub();
+  sinon.stub(sessionManager, 'handleEndRtcSessionsWithJid');
+
+  sessionManager.expose.endRtcSessions('someone@test.com');
+
+  sinon.assert.notCalled(sessionManager.jingleJs.endAllSessions);
+  sinon.assert.calledOnce(sessionManager.handleEndRtcSessionsWithJid);
+  sinon.assert.calledWith(sessionManager.handleEndRtcSessionsWithJid, {
+    jid: 'someone@test.com',
+    reason: 'success'
+  });
 });
 
 test('cancelRtcSession should emit error if no session provided', t => {
@@ -444,12 +722,41 @@ test('rejectRtcSession should emit error if no session provided', t => {
     t.is(event, 'rtcSessionError');
     t.is(data, 'Cannot reject session because it is not pending or does not exist');
   });
-  sessionManager.expose.rejectRtcSession({});
+  sessionManager.expose.rejectRtcSession('asdf');
+});
+
+test('rejectRtcSession not send anything if ignore is true', t => {
+  sandbox.stub(sessionManager, 'emit');
+  sessionManager.pendingSessions.asdf = {};
+  sessionManager.expose.rejectRtcSession('asdf', true);
+  t.is(sessionManager.ignoredSessions.get('asdf'), true);
+  sinon.assert.notCalled(sessionManager.emit);
+});
+
+test('rejectRtcSession will send two reject messages', t => {
+  sandbox.stub(sessionManager, 'emit');
+  sessionManager.pendingSessions.asdf = { from: 'someone-else@test.com' };
+  sessionManager.expose.rejectRtcSession('asdf');
+  sinon.assert.calledTwice(sessionManager.emit);
+  sessionManager.emit.firstCall.calledWith({
+    to: sessionManager.jid.bare,
+    reject: {
+      id: 'asdf'
+    }
+  });
+  sessionManager.emit.secondCall.calledWith({
+    to: 'someone-else@test.com',
+    reject: {
+      id: 'asdf'
+    }
+  });
+
+  t.is(typeof sessionManager.pendingSessions.asdf, 'undefined');
 });
 
 /* Exposed Methods on the extension */
 
-test('exposeEvents should return an array of stanzaEvents', t => {
+test('exposeEvents should return an array of jingleEvents', t => {
   const actual = sessionManager.exposeEvents;
   const expected = [
     'services',
@@ -462,113 +769,194 @@ test('exposeEvents should return an array of stanzaEvents', t => {
   t.deepEqual(actual, expected);
 });
 
-/* stanzaCheckers --- Predicate functions that check each stanza */
-test('iceServers should evaluate services and jingle message', t => {
-  t.plan(1);
-  const actual = sessionManager.stanzaCheckers.iceServers(iceServersStanza);
-  const expected = true;
-  t.is(actual, expected);
+test('setIceServers and getIceServers cooperate', t => {
+  const mockIceServers = [ { urls: [] } ];
+  sessionManager.expose.setIceServers(mockIceServers);
+  t.is(sessionManager.jingleJs.iceServers, mockIceServers);
+  t.is(sessionManager.expose.getIceServers(), mockIceServers);
 });
 
-test('jingleMessageInit should evaluate services and jingle message', t => {
+test('on and off hook up to the session manager directly', t => {
   t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageInit(jingleMessageInitStanza);
-  const expected = true;
-  t.is(actual, expected);
+  const handler = () => t.pass();
+  sessionManager.expose.on('someEvent', handler);
+  sessionManager.emit('someEvent');
+  sessionManager.expose.off('someEvent', handler);
+
+  // it shouldn't fire again now
+  sessionManager.emit('someEvent');
+});
+
+/* stanzaCheckers --- Predicate functions that check each stanza */
+test('jingleMessageInit should evaluate services and jingle message', t => {
+  t.true(sessionManager.stanzaCheckers.jingleMessageInit(jingleMessageInitStanza.toJSON()));
+  t.false(sessionManager.stanzaCheckers.jingleMessageInit(jingleMessageRetractStanza.toJSON()));
 });
 
 test('jingleMessageRetract should evaluate services and jingle message', t => {
-  t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageRetract(jingleMessageRetractStanza);
-  const expected = true;
-  t.is(actual, expected);
+  t.true(sessionManager.stanzaCheckers.jingleMessageRetract(jingleMessageRetractStanza.toJSON()));
+  t.false(sessionManager.stanzaCheckers.jingleMessageRetract(jingleMessageInitStanza.toJSON()));
 });
 
 test('jingleMessageAccept should evaluate services and jingle message', t => {
-  t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageAccept(jingleMessageAcceptStanza);
-  const expected = true;
-  t.is(actual, expected);
+  t.true(sessionManager.stanzaCheckers.jingleMessageAccept(jingleMessageAcceptStanza.toJSON()));
+  t.false(sessionManager.stanzaCheckers.jingleMessageAccept(jingleMessageProceedStanza.toJSON()));
 });
 
 test('jingleMessageProceed should evaluate services and jingle message', t => {
-  t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageProceed(jingleMessageProceedStanza);
-  const expected = true;
-  t.is(actual, expected);
+  t.true(sessionManager.stanzaCheckers.jingleMessageProceed(jingleMessageProceedStanza.toJSON()));
+  t.false(sessionManager.stanzaCheckers.jingleMessageProceed(jingleMessageRejectStanza.toJSON()));
 });
 
 test('jingleMessageReject should evaluate services and jingle message', t => {
-  t.plan(1);
-  const actual = sessionManager.stanzaCheckers.jingleMessageReject(jingleMessageRejectStanza);
-  const expected = true;
-  t.is(actual, expected);
-});
-
-test('upgradeError should evaluate error and presence', t => {
-  t.plan(1);
-  const actual = sessionManager.stanzaCheckers.upgradeError(upgradeErrorStanza);
-  const expected = false;
-  t.is(actual, expected);
+  t.true(sessionManager.stanzaCheckers.jingleMessageReject(jingleMessageRejectStanza.toJSON()));
+  t.false(sessionManager.stanzaCheckers.jingleMessageReject(jingleMessageProceedStanza.toJSON()));
 });
 
 /* stanzaCheckers --- Predicate functions that check each stanza */
 
 /* stanzaHandlers */
 
-test('requestWebrtcDump should emit message', t => {
-  t.plan(2);
-  const stanza = {
-    attrs: {
-      requestId: 'myRequestId1'
-    }
-  };
-  sandbox.stub(sessionManager, 'emit').callsFake((event, data) => {
-    t.is(event, 'requestWebrtcDump');
-    t.is(data, 'myRequestId1');
-  });
-  sessionManager.stanzaHandlers.requestWebrtcDump(stanza);
+test('jingle should return if it receives an error or result for a stanza it did not send', t => {
+  sinon.stub(sessionManager.jingleJs, 'process');
+  const stanzaData = jingleActionStanza.toJSON();
+  stanzaData.type = 'error';
+  sessionManager.stanzaHandlers.jingle(stanzaData);
+  stanzaData.type = 'result';
+  sessionManager.stanzaHandlers.jingle(stanzaData);
+  sinon.assert.notCalled(sessionManager.jingleJs.process);
+});
+
+test('jingle should attach the pendingIq jingle data before processing for an error or result', t => {
+  sinon.stub(sessionManager.jingleJs, 'process');
+  const stanzaData = jingleActionStanza.toJSON();
+  const pendingData = { jingle: stanzaData.jingle };
+  stanzaData.jingle = null;
+  stanzaData.type = 'error';
+  sessionManager.pendingIqs[stanzaData.id] = pendingData;
+
+  sessionManager.stanzaHandlers.jingle(stanzaData);
+  sinon.assert.calledOnce(sessionManager.jingleJs.process);
+
+  stanzaData.jingle = pendingData.jingle;
+  sinon.assert.calledWith(sessionManager.jingleJs.process, stanzaData);
+});
+
+test('jingleMessageInit should return without emitting an event if it is from another client of the same user', t => {
+  sinon.stub(sessionManager, 'emit');
+  const stanzaData = jingleMessageInitStanza.toJSON();
+  stanzaData.from = sessionManager.jid.bare;
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData);
+
+  stanzaData.from = '';
+  stanzaData.ofrom = sessionManager.jid.bare;
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, jingleMessageInitStanza);
+
+  sinon.assert.notCalled(sessionManager.emit);
 });
 
 test('jingleMessageInit should emit message', t => {
-  t.plan(2);
-  const expectedData = {
+  t.plan(0);
+  sandbox.stub(sessionManager, 'emit');
+  const stanzaData = jingleMessageInitStanza.toJSON();
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, jingleMessageInitStanza);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.REQUEST_INCOMING_RTCSESSION, {
     sessionId: 'proposeId1',
     conversationId: undefined,
     autoAnswer: undefined,
     persistentConnectionId: undefined,
     roomJid: 'o art thou',
     fromJid: 'o art thou'
-  };
-  sandbox.stub(sessionManager, 'emit').callsFake((event, data) => {
-    t.is(event, 'requestIncomingRtcSession');
-    t.deepEqual(data, expectedData);
   });
-  sessionManager.stanzaHandlers.jingleMessageInit(jingleMessageInitStanza);
 });
 
-test('jingleMessageRetract should emit message', t => {
-  t.plan(1);
-  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
-  t.truthy(sessionManager.stanzaHandlers.jingleMessageRetract(jingleMessageRetractStanza));
+test('jingleMessageInit should emit message with a different from address', t => {
+  t.plan(0);
+  sandbox.stub(sessionManager, 'emit');
+  const stanzaData = jingleMessageInitStanza.toJSON();
+  stanzaData.from = 'o art thou';
+  stanzaData.ofrom = null;
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, jingleMessageInitStanza);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.REQUEST_INCOMING_RTCSESSION, {
+    sessionId: 'proposeId1',
+    conversationId: undefined,
+    autoAnswer: undefined,
+    persistentConnectionId: undefined,
+    roomJid: 'o art thou',
+    fromJid: 'o art thou'
+  });
 });
 
-test('jingleMessageAccept should emit message', t => {
-  t.plan(1);
-  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
-  t.is(sessionManager.stanzaHandlers.jingleMessageAccept(jingleMessageAcceptStanza), undefined);
+test('jingleMessageRetract should emit a cancel event and remove the pendingSession', t => {
+  const stanzaData = jingleMessageRetractStanza.toJSON();
+  sinon.stub(sessionManager, 'emit');
+  sessionManager.pendingSessions[stanzaData.retract.id] = {};
+  sessionManager.stanzaHandlers.jingleMessageRetract(stanzaData);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.CANCEL_INCOMING_RTCSESSION, stanzaData.retract.id);
+  t.is(typeof sessionManager.pendingSessions[stanzaData.retract.id], 'undefined');
 });
 
-test('jingleMessageProceed should emit message', t => {
-  t.plan(1);
-  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
-  t.truthy(sessionManager.stanzaHandlers.jingleMessageProceed(jingleMessageProceedStanza));
+test('jingleMessageAccept should emit an accept event and remove the pendingSession', t => {
+  const stanzaData = jingleMessageAcceptStanza.toJSON();
+  stanzaData.from = sessionManager.jid.toString() + '/other-client';
+  sinon.stub(sessionManager, 'emit');
+  sessionManager.pendingSessions[stanzaData.accept.id] = {};
+  sessionManager.stanzaHandlers.jingleMessageAccept(stanzaData);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.HANDLED_INCOMING_RTCSESSION, stanzaData.accept.id);
+  t.is(typeof sessionManager.pendingSessions[stanzaData.accept.id], 'undefined');
 });
 
-test('jingleMessageReject should emit message', t => {
-  t.plan(1);
-  // TODO: There's no assertion about a message being emitted in this test. Also need another to cover jid to/from equal
-  t.is(sessionManager.stanzaHandlers.jingleMessageReject(jingleMessageRejectStanza), undefined);
+test('jingleMessageAccept should return without emitting an event if it is from another client of the same user', t => {
+  sinon.stub(sessionManager, 'emit');
+  const stanzaData = jingleMessageAcceptStanza.toJSON();
+  stanzaData.from = sessionManager.jid.toString();
+  sessionManager.stanzaHandlers.jingleMessageAccept(stanzaData);
+
+  sinon.assert.notCalled(sessionManager.emit);
+});
+
+test('jingleMessageProceed should emit a proceed event and not remove the pendingSession', t => {
+  const stanzaData = jingleMessageProceedStanza.toJSON();
+  sinon.stub(sessionManager, 'emit');
+  sessionManager.pendingSessions[stanzaData.proceed.id] = {};
+  sessionManager.stanzaHandlers.jingleMessageProceed(stanzaData);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.OUTGOING_RTCSESSION_PROCEED, stanzaData.proceed.id);
+  t.truthy(sessionManager.pendingSessions[stanzaData.proceed.id]);
+});
+
+test('jingleMessageReject should return without emitting an event if it is from another client of the same user', t => {
+  sinon.stub(sessionManager, 'emit');
+  const stanzaData = jingleMessageRejectStanza.toJSON();
+  stanzaData.from = sessionManager.jid.toString();
+  sessionManager.stanzaHandlers.jingleMessageReject(stanzaData);
+
+  sinon.assert.notCalled(sessionManager.emit);
+});
+
+test('jingleMessageReject should emit a handled event if it is from another client of the same user', t => {
+  const stanzaData = jingleMessageRejectStanza.toJSON();
+  stanzaData.from = sessionManager.jid.bare;
+  sinon.stub(sessionManager, 'emit');
+  sessionManager.pendingSessions[stanzaData.reject.id] = {};
+  sessionManager.stanzaHandlers.jingleMessageReject(stanzaData);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.HANDLED_INCOMING_RTCSESSION, stanzaData.reject.id);
+  t.is(typeof sessionManager.pendingSessions[stanzaData.reject.id], 'undefined');
+});
+
+test('jingleMessageReject should emit a handled event if it is from another client of the same user', t => {
+  const stanzaData = jingleMessageRejectStanza.toJSON();
+  sinon.stub(sessionManager, 'emit');
+  sessionManager.pendingSessions[stanzaData.reject.id] = {};
+  sessionManager.stanzaHandlers.jingleMessageReject(stanzaData);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.OUTGOING_RTCSESSION_REJECTED, stanzaData.reject.id);
+  t.is(typeof sessionManager.pendingSessions[stanzaData.reject.id], 'undefined');
 });
 
 /* stanzaHandlers */

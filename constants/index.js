@@ -26,7 +26,7 @@ const constants = {
   labels: {
     SUCCESS: 'success'
   },
-  stanzaEvents: {
+  jingleEvents: {
     SERVICES: 'services',
     PROPOSE: 'propose',
     RETRACT: 'retract',

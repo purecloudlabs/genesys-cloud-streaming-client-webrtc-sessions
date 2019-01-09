@@ -52,12 +52,12 @@ test('labels object should render proper labels', t => {
   });
 });
 
-test('stanzaEvents should render proper events', t => {
+test('jingleEvents should render proper events', t => {
   t.plan(6);
-  let stanzaEvents = constants.stanzaEvents;
-  stanzaEvents = Object.keys(stanzaEvents).map(event => {
+  let jingleEvents = constants.jingleEvents;
+  jingleEvents = Object.keys(jingleEvents).map(event => {
     return {
-      event: stanzaEvents[event]
+      event: jingleEvents[event]
     };
   });
   const eventLabels = [
@@ -68,7 +68,7 @@ test('stanzaEvents should render proper events', t => {
     'proceed',
     'reject'
   ];
-  stanzaEvents.forEach((value, index, array) => {
+  jingleEvents.forEach((value, index, array) => {
     t.is(value.event, eventLabels[index]);
   });
 });
