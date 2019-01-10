@@ -122,7 +122,7 @@ class JingleSessionManager extends WildEmitter {
       iceServers: this.iceServers,
       prepareSession: options => {
         options.signalEndOfCandidates = this.clientOptions.signalEndOfCandidates !== false;
-        options.signalIceConnected = !!this.clientOptions.signalIceConnected;
+        options.signalIceConnected = this.clientOptions.signalIceConnected !== false;
         return prepareSession(options);
       }
     });
@@ -268,7 +268,7 @@ class JingleSessionManager extends WildEmitter {
             iceServers: this.jingleJs.iceServers,
             constraints: peerConnectionConstraints,
             signalEndOfCandidates: this.clientOptions.signalEndOfCandidates !== false,
-            signalIceConnected: !!this.clientOptions.signalIceConnected
+            signalIceConnected: this.clientOptions.signalIceConnected !== false
           };
 
           if (peerConstraints.offerToReceiveAudio || peerConstraints.offerToReceiveVideo) {
