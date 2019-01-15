@@ -110,6 +110,23 @@ class JingleSessionManager extends WildEmitter {
       }
     });
 
+    const ScreenStart = stanzaio.stanzas.define({
+      name: 'screenstart',
+      namespace: 'urn:xmpp:jingle:apps:rtp:info:1',
+      element: 'screen-start'
+    });
+
+    const ScreenStop = stanzaio.stanzas.define({
+      name: 'screenstop',
+      namespace: 'urn:xmpp:jingle:apps:rtp:info:1',
+      element: 'screen-stop'
+    });
+
+    stanzaio.stanzas.withDefinition('jingle', 'urn:xmpp:jingle:1', function (Jingle) {
+      stanzaio.stanzas.extend(Jingle, ScreenStart);
+      stanzaio.stanzas.extend(Jingle, ScreenStop);
+    });
+
     stanzaio.stanzas.extend(MediaPresence, MediaStream, 'mediaStreams');
     stanzaio.stanzas.extendPresence(MediaPresence);
 
@@ -360,15 +377,7 @@ class JingleSessionManager extends WildEmitter {
         if (jid) {
           this.handleEndRtcSessionsWithJid({ jid, reason });
 
-          if (jid.match(/@conference/)) {
-            this.emit(events.UPDATE_MEDIA_PRESENCE, {
-              opts: { jid },
-              mediaDescriptions: [],
-              callback: callback
-            });
-          } else {
-            return callback();
-          }
+          return callback();
         } else {
           this.jingleJs.endAllSessions(reason);
           this.pendingSessions = {};
@@ -451,6 +460,30 @@ class JingleSessionManager extends WildEmitter {
           this.emit('send', reject2, true); // send as Message
         }
         delete this.pendingSessions[sessionId];
+      }.bind(this),
+
+      notifyScreenShareStart: function (session) {
+        this.emit('send', {
+          to: session.peerID,
+          from: this.jid.bare,
+          jingle: {
+            action: 'session-info',
+            sid: session.sid,
+            screenstart: {}
+          }
+        });
+      }.bind(this),
+
+      notifyScreenShareStop: function (session) {
+        this.emit('send', {
+          to: session.peerID,
+          from: this.jid.bare,
+          jingle: {
+            action: 'session-info',
+            sid: session.sid,
+            screenstop: {}
+          }
+        });
       }.bind(this)
     };
   }
