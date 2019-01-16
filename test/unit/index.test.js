@@ -624,7 +624,6 @@ test('endRtcSessions should call handleEndRtcSessionsWithJid if a jid is provide
   sessionManager.jingleJs.endAllSessions = sandbox.stub();
   sessionManager.jingleJs.endAllSessions = sandbox.stub();
   sinon.stub(sessionManager, 'handleEndRtcSessionsWithJid');
-  sinon.stub(sessionManager, 'emit');
 
   sessionManager.expose.endRtcSessions({ jid: 'someone@conference.test.com' });
 
@@ -633,11 +632,6 @@ test('endRtcSessions should call handleEndRtcSessionsWithJid if a jid is provide
   sinon.assert.calledWith(sessionManager.handleEndRtcSessionsWithJid, {
     jid: 'someone@conference.test.com',
     reason: 'success'
-  });
-  sinon.assert.calledWith(sessionManager.emit, events.UPDATE_MEDIA_PRESENCE, {
-    opts: { jid: 'someone@conference.test.com' },
-    mediaDescriptions: [],
-    callback: sinon.match.func
   });
 });
 
@@ -752,6 +746,48 @@ test('rejectRtcSession will send two reject messages', t => {
   });
 
   t.is(typeof sessionManager.pendingSessions.asdf, 'undefined');
+});
+
+test('notifyScreenShareStart should emit screenstart', t => {
+  sandbox.stub(sessionManager, 'emit');
+
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ ]
+  });
+
+  sessionManager.expose.notifyScreenShareStart(mediaSession);
+
+  sessionManager.emit.firstCall.calledWith({
+    to: mediaSession.peerID,
+    from: sessionManager.jid.bare,
+    jingle: {
+      action: 'session-info',
+      sid: mediaSession.sid,
+      screenstart: {}
+    }
+  });
+});
+
+test('notifyScreenShareStop should emit screenstop', t => {
+  sandbox.stub(sessionManager, 'emit');
+
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ ]
+  });
+
+  sessionManager.expose.notifyScreenShareStop(mediaSession);
+
+  sessionManager.emit.firstCall.calledWith({
+    to: mediaSession.peerID,
+    from: sessionManager.jid.bare,
+    jingle: {
+      action: 'session-info',
+      sid: mediaSession.sid,
+      screenstop: {}
+    }
+  });
 });
 
 /* Exposed Methods on the extension */
