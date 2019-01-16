@@ -4,6 +4,7 @@ const test = require('ava');
 const sinon = require('sinon');
 const jingleStanza = require('jingle-stanza');
 const WildEmitter = require('wildemitter');
+const XMPP = require('stanza.io');
 
 const {
   events
@@ -68,6 +69,25 @@ test.afterEach(() => {
   delete global.RTCPeerConnection;
   delete global.MediaSession;
   sandbox.restore();
+});
+
+/* custom stanza definitions */
+test('screenstart stanza should be defined properly', t => {
+  const stanzaio = XMPP.createClient();
+
+  const webrtcSessions = new SessionManager({ _stanzaio: stanzaio });
+  const IQ = webrtcSessions.client._stanzaio.stanzas.getIQ();
+  const iq = new IQ({ to: 'test', from: 'test', jingle: { sid: 'test', action: 'session-info', screenstart: {} } });
+  t.truthy(iq.toString().indexOf('screen-start'), 'stanza should include a "screen-start" element');
+});
+
+test('screenstop stanza should be defined properly', t => {
+  const stanzaio = XMPP.createClient();
+
+  const webrtcSessions = new SessionManager({ _stanzaio: stanzaio });
+  const IQ = webrtcSessions.client._stanzaio.stanzas.getIQ();
+  const iq = new IQ({ to: 'test', from: 'test', jingle: { sid: 'test', action: 'session-info', screenstop: {} } });
+  t.truthy(iq.toString().indexOf('screen-stop'), 'stanza should include a "screen-stop" element');
 });
 
 test('sessionManager should take in a client with a stanzaio property and clientOptions', t => {
@@ -624,7 +644,6 @@ test('endRtcSessions should call handleEndRtcSessionsWithJid if a jid is provide
   sessionManager.jingleJs.endAllSessions = sandbox.stub();
   sessionManager.jingleJs.endAllSessions = sandbox.stub();
   sinon.stub(sessionManager, 'handleEndRtcSessionsWithJid');
-  sinon.stub(sessionManager, 'emit');
 
   sessionManager.expose.endRtcSessions({ jid: 'someone@conference.test.com' });
 
@@ -633,11 +652,6 @@ test('endRtcSessions should call handleEndRtcSessionsWithJid if a jid is provide
   sinon.assert.calledWith(sessionManager.handleEndRtcSessionsWithJid, {
     jid: 'someone@conference.test.com',
     reason: 'success'
-  });
-  sinon.assert.calledWith(sessionManager.emit, events.UPDATE_MEDIA_PRESENCE, {
-    opts: { jid: 'someone@conference.test.com' },
-    mediaDescriptions: [],
-    callback: sinon.match.func
   });
 });
 
@@ -752,6 +766,48 @@ test('rejectRtcSession will send two reject messages', t => {
   });
 
   t.is(typeof sessionManager.pendingSessions.asdf, 'undefined');
+});
+
+test('notifyScreenShareStart should emit screenstart', t => {
+  sandbox.stub(sessionManager, 'emit');
+
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ ]
+  });
+
+  sessionManager.expose.notifyScreenShareStart(mediaSession);
+
+  sessionManager.emit.firstCall.calledWith({
+    to: mediaSession.peerID,
+    from: sessionManager.jid.bare,
+    jingle: {
+      action: 'session-info',
+      sid: mediaSession.sid,
+      screenstart: {}
+    }
+  });
+});
+
+test('notifyScreenShareStop should emit screenstop', t => {
+  sandbox.stub(sessionManager, 'emit');
+
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ ]
+  });
+
+  sessionManager.expose.notifyScreenShareStop(mediaSession);
+
+  sessionManager.emit.firstCall.calledWith({
+    to: mediaSession.peerID,
+    from: sessionManager.jid.bare,
+    jingle: {
+      action: 'session-info',
+      sid: mediaSession.sid,
+      screenstop: {}
+    }
+  });
 });
 
 /* Exposed Methods on the extension */
