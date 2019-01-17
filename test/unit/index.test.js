@@ -914,13 +914,23 @@ test('jingleMessageInit should return without emitting an event if it is from an
 test('jingleMessageInit should emit message', t => {
   t.plan(0);
   sandbox.stub(sessionManager, 'emit');
-  const stanzaData = jingleMessageInitStanza.toJSON();
-  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, jingleMessageInitStanza);
+  const propose = jingleStanza.getMessageXml({
+    'id': 'mmsageInit1',
+    'from': 'romeo@montague.lit',
+    'ofrom': 'o art thou',
+    'to': 'juliet@capulet.com',
+    'propose': {
+      'id': 'proposeId1'
+    }
+  });
+  propose.propose.xml.attrs['inin-autoanswer'] = 'false';
+  const stanzaData = propose.toJSON();
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, propose);
   sinon.assert.calledOnce(sessionManager.emit);
   sinon.assert.calledWith(sessionManager.emit, events.REQUEST_INCOMING_RTCSESSION, {
     sessionId: 'proposeId1',
     conversationId: undefined,
-    autoAnswer: undefined,
+    autoAnswer: false,
     persistentConnectionId: undefined,
     roomJid: 'o art thou',
     fromJid: 'o art thou'
@@ -930,15 +940,25 @@ test('jingleMessageInit should emit message', t => {
 test('jingleMessageInit should emit message with a different from address', t => {
   t.plan(0);
   sandbox.stub(sessionManager, 'emit');
-  const stanzaData = jingleMessageInitStanza.toJSON();
+  const propose = jingleStanza.getMessageXml({
+    'id': 'mmsageInit1',
+    'from': 'romeo@montague.lit',
+    'ofrom': 'o art thou',
+    'to': 'juliet@capulet.com',
+    'propose': {
+      'id': 'proposeId1'
+    }
+  });
+  propose.propose.xml.attrs['inin-autoanswer'] = 'true';
+  const stanzaData = propose.toJSON();
   stanzaData.from = 'o art thou';
   stanzaData.ofrom = null;
-  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, jingleMessageInitStanza);
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, propose);
   sinon.assert.calledOnce(sessionManager.emit);
   sinon.assert.calledWith(sessionManager.emit, events.REQUEST_INCOMING_RTCSESSION, {
     sessionId: 'proposeId1',
     conversationId: undefined,
-    autoAnswer: undefined,
+    autoAnswer: true,
     persistentConnectionId: undefined,
     roomJid: 'o art thou',
     fromJid: 'o art thou'

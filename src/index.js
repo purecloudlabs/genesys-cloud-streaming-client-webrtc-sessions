@@ -545,7 +545,7 @@ class JingleSessionManager extends WildEmitter {
         return this.emit('requestIncomingRtcSession', {
           sessionId: stanza.propose.id,
           conversationId: raw.propose.xml.attrs['inin-cid'],
-          autoAnswer: raw.propose.xml.attrs['inin-autoanswer'],
+          autoAnswer: raw.propose.xml.attrs['inin-autoanswer'] === 'true',
           persistentConnectionId: raw.propose.xml.attrs['inin-persistent-cid'],
           roomJid,
           fromJid: stanza.from.full || stanza.from
