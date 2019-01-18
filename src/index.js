@@ -133,13 +133,22 @@ class JingleSessionManager extends WildEmitter {
     // Extend messages for jingleMessage (propose/proceed/etc)
     stanzaio.stanzas.use(jingleMessage);
 
-    this.iceServers = clientOptions.iceServers || [];
-    this.clientOptions = clientOptions;
+    this.config = {
+      iceTransportPolicy: clientOptions.iceTransportPolicy,
+      iceServers: clientOptions.iceServers,
+      // all default to true
+      signalEndOfCandidates: clientOptions.signalEndOfCandidates !== false,
+      signalIceConnected: clientOptions.signalIceConnected !== false,
+      rtcSessionSurvivability: clientOptions.rtcSessionSurvivability !== false,
+      disableEOCShortCircuit: clientOptions.disableEOCShortCircuit !== false
+    };
     this.jingleJs = new Jingle({
-      iceServers: this.iceServers,
+      iceServers: this.config.iceServers,
       prepareSession: options => {
-        options.signalEndOfCandidates = this.clientOptions.signalEndOfCandidates !== false;
-        options.signalIceConnected = this.clientOptions.signalIceConnected !== false;
+        options.iceTransportPolicy = this.config.iceTransportPolicy || 'all';
+        options.signalEndOfCandidates = this.config.signalEndOfCandidates;
+        options.signalIceConnected = this.config.signalIceConnected;
+        options.disableEOCShortCircuit = this.config.disableEOCShortCircuit;
         return prepareSession(options);
       }
     });
@@ -149,10 +158,10 @@ class JingleSessionManager extends WildEmitter {
     // can ignore up to 10 sessions for up to 6 hours
     this.ignoredSessions = LRU({ max: 10, maxAge: 10 * 60 * 60 * 6 });
 
-    this.logger = clientOptions.logger || console;
+    this.logger = client.logger;
 
     stanzaio.on('disconnect', () => {
-      if (clientOptions.rtcSessionSurvivability !== true) {
+      if (this.config.rtcSessionSurvivability === false) {
         this.pendingSessions = {};
         this.pendingIqs = {};
         return this.jingleJs.endAllSessions('disconnect');
@@ -251,7 +260,9 @@ class JingleSessionManager extends WildEmitter {
   // these are the methods exposed on the extension (session manager)
   get expose () {
     return {
+      config: this.config,
       setIceServers: function (iceServers) {
+        this.config.iceServers = iceServers;
         this.jingleJs.iceServers = iceServers;
       }.bind(this),
 
@@ -284,8 +295,10 @@ class JingleSessionManager extends WildEmitter {
             parent: this.jingleJs,
             iceServers: this.jingleJs.iceServers,
             constraints: peerConnectionConstraints,
-            signalEndOfCandidates: this.clientOptions.signalEndOfCandidates !== false,
-            signalIceConnected: this.clientOptions.signalIceConnected !== false
+            signalEndOfCandidates: this.config.signalEndOfCandidates,
+            signalIceConnected: this.config.signalIceConnected,
+            iceTransportPolicy: this.config.iceTransportPolicy,
+            disableEOCShortCircuit: this.config.disableEOCShortCircuit
           };
 
           if (peerConstraints.offerToReceiveAudio || peerConstraints.offerToReceiveVideo) {

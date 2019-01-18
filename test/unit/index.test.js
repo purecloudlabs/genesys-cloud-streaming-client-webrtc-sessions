@@ -62,7 +62,10 @@ test.beforeEach(() => {
   global.MediaSession = MockMediaSession();
   const stanzaio = new MockStanzaIo('theOneJidToRuleThemAll12345');
   sandbox = sinon.sandbox.create();
-  sessionManager = new SessionManager({ _stanzaio: stanzaio });
+  sessionManager = new SessionManager({
+    _stanzaio: stanzaio,
+    logger: { debug () {}, info () {}, warn () {}, error () {} }
+  });
 });
 
 test.afterEach(() => {
@@ -98,8 +101,7 @@ test('sessionManager should take in a client with a stanzaio property and client
     stanzas: MOCK_JXT
   };
   const clientOptions = {
-    iceServers: [],
-    logger: () => {}
+    iceServers: []
   };
   sessionManager = new SessionManager({ _stanzaio: stanzaio }, clientOptions);
   t.truthy(sessionManager);
@@ -109,7 +111,6 @@ test('sessionManager should allow for rtcSessionSurvivability = true', t => {
   const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
   const clientOptions = {
     iceServers: [],
-    logger: () => {},
     rtcSessionSurvivability: true
   };
   sinon.spy(client._stanzaio, 'on');
@@ -131,7 +132,6 @@ test('sessionManager should allow for rtcSessionSurvivability = false', t => {
   const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
   const clientOptions = {
     iceServers: [],
-    logger: () => {},
     rtcSessionSurvivability: false
   };
   sinon.spy(client._stanzaio, 'on');
@@ -153,8 +153,7 @@ test('sessionManager will not support features of RTCPeerConnection is not defin
   global.window.RTCPeerConnection = null;
   const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
   const clientOptions = {
-    iceServers: [],
-    logger: () => {}
+    iceServers: []
   };
   sinon.spy(client._stanzaio.disco, 'addFeature');
   sessionManager = new SessionManager(client, clientOptions);
@@ -164,10 +163,7 @@ test('sessionManager will not support features of RTCPeerConnection is not defin
 test('exposeEvents', t => {
   const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
   const clientOptions = {
-    iceServers: [],
-    logger: {
-      debug: sinon.stub()
-    }
+    iceServers: []
   };
   sessionManager = new SessionManager(client, clientOptions);
   t.deepEqual(sessionManager.stanzaEvents, ['iq:set:jingle', 'iq:get:jingle']);
@@ -175,12 +171,12 @@ test('exposeEvents', t => {
 
 test('proxyEvents should proxy specific events up from the jingle session manager', t => {
   t.plan(6);
-  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const client = {
+    _stanzaio: new MockStanzaIo('somejid@example.com'),
+    logger: { debug: sandbox.stub() }
+  };
   const clientOptions = {
-    iceServers: [],
-    logger: {
-      debug: sinon.stub()
-    }
+    iceServers: []
   };
   sessionManager = new SessionManager(client, clientOptions);
 
@@ -214,18 +210,14 @@ test('proxyEvents should proxy specific events up from the jingle session manage
 });
 
 test('prepareSession should return Media session', t => {
-  sessionManager.clientOptions = {
-    signalEndOfCandidates: true
-  };
+  sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
   t.is(mediaSession.peerID, 'somebody@conference');
 });
 
 test.serial('prepareSession should wire up data channel events', async t => {
   t.plan(3);
-  sessionManager.clientOptions = {
-    signalEndOfCandidates: true
-  };
+  sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
   t.is(mediaSession.peerID, 'somebody@conference');
   const mockChannel = { label: 'channel1' };
@@ -243,9 +235,7 @@ test.serial('prepareSession should wire up data channel events', async t => {
 });
 
 test('prepareSession should create a MediaDataSession when appropriate', t => {
-  sessionManager.clientOptions = {
-    signalEndOfCandidates: true
-  };
+  sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
     applicationTypes: [ 'rtp', 'datachannel' ]
@@ -255,9 +245,7 @@ test('prepareSession should create a MediaDataSession when appropriate', t => {
 });
 
 test('prepareSession should create a MediaSession when appropriate', t => {
-  sessionManager.clientOptions = {
-    signalEndOfCandidates: true
-  };
+  sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
     applicationTypes: [ 'rtp' ]
@@ -267,9 +255,7 @@ test('prepareSession should create a MediaSession when appropriate', t => {
 });
 
 test('prepareSession should create a MediaSession when appropriate', t => {
-  sessionManager.clientOptions = {
-    signalEndOfCandidates: true
-  };
+  sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
     applicationTypes: [ ]
@@ -279,9 +265,8 @@ test('prepareSession should create a MediaSession when appropriate', t => {
 });
 
 test('media session should emit end of candidates', t => {
-  sessionManager.clientOptions = {
-    signalEndOfCandidates: true
-  };
+  sessionManager.config.signalEndOfCandidates = true;
+  sessionManager.config.disableEOCShortCircuit = false;
   const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
   const message = mediaSession.emit('addChannel', { id: 'channel1' });
   t.is(message.peerID, 'somebody@conference');
@@ -294,10 +279,23 @@ test('media session should emit end of candidates', t => {
   sinon.assert.notCalled(mediaSession.send);
 });
 
+test('media session should not end of candidates on checking', t => {
+  sessionManager.config.signalEndOfCandidates = true;
+  sessionManager.config.disableEOCShortCircuit = true;
+  const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
+  const message = mediaSession.emit('addChannel', { id: 'channel1' });
+  t.is(message.peerID, 'somebody@conference');
+
+  sinon.spy(mediaSession, 'onIceEndOfCandidates');
+  sinon.spy(mediaSession, 'send');
+  mediaSession.pc.pc.iceConnectionState = 'checking';
+  mediaSession.pc.emit('iceConnectionStateChange');
+  sinon.assert.notCalled(mediaSession.onIceEndOfCandidates);
+  sinon.assert.notCalled(mediaSession.send);
+});
+
 test('media session should emit connected event', t => {
-  sessionManager.clientOptions = {
-    signalIceConnected: true
-  };
+  sessionManager.config.signalIceConnected = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
   const message = mediaSession.emit('addChannel', { id: 'channel1' });
   t.is(message.peerID, 'somebody@conference');
