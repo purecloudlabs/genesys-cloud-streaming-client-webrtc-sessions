@@ -15,7 +15,7 @@ attribute with the associated `conversationId`.
 ## Session Flow
 
 WebRTC Softphone sessions use an initiation/discovery flow before media is
-established in order that a user might decide which client (i.e., device or
+established so that a user can decide which client (i.e., device or
 browser tab) will be used to establish the session media.
 
 The two primary differences for incoming calls and outbound calls are:
@@ -27,20 +27,20 @@ requested the outbound call, or by a client designed to handle all outbound call
 ```text
 Outbound
 
-Alice                       Public API           WebRTC SDK
+Alice                       Public API         webrtcSessions
    |                            |                     |
    |    make new call (1)       |                     |    1. POST to api/v2/conversation/calls
    +--------------------------->|                     |
    |                            |                     |
    |   return conversationId*   |                     |
    |<---------------------------+                     |
-   |                            |    propose* (2)     |    2. Event on SDK (see events below)
+   |                            |    propose* (2)     |    2. Event on webrtcSessions (see events below)
    |<-------------------------------------------------+
    |                            |                     |
    |    proceed (3)             |                     |    3. Sent by accepting the proposed session
    +------------------------------------------------->|
    |                            |                     |
-   |                            |    initiate (4)     |    4. Full session details in an event on SDK
+   |                            |    initiate (4)     |    4. Full session details in an event on webrtcSessions
    |<-------------------------------------------------|
    |     accept (5)             |                     |    5. Sent by accepting the session
    +------------------------------------------------->|       (programmatically, or automatically based on config)
@@ -50,17 +50,17 @@ Alice                       Public API           WebRTC SDK
 ```text
 Inbound
 
-Alice                     Push Notifications    WebRTC SDK
+Alice                     PubSub Extension    webrtcSessions
    |                            |                  |
    |      notification* (1)     |                  |    1. A pub sub notification pushed to client via Notifications
    |<---------------------------+                  |       API websocket with incoming call details^
-   |                            |   propose* (2)   |    2. Event on SDK (see events below)
+   |                            |   propose* (2)   |    2. Event on webrtcSessions (see events below)
    |<----------------------------------------------+
    |                            |                  |
    |       proceed (3)          |                  |    3. Sent by accepting the proposed session
-   +---------------------------------------------->|
+   +---------------------------------------------->|        on a single client
    |                            |                  |
-   |                            |  initiate (4)    |    4. Full session details in an event on SDK
+   |                            |  initiate (4)    |    4. Full session details in an event on webrtcSessions
    |<----------------------------------------------|
    |     accept (5)             |                  |    5. Sent by accepting the session
    +---------------------------------------------->|       (programmatically, or automatically based on config)
@@ -74,7 +74,7 @@ Alice                     Push Notifications    WebRTC SDK
 
 After creating an instance of the streaming client, your client can add event handlers for
 incoming sessions (for inbound or outbound calls). `requestIncomingRtcSession` is an example
-of an SDK event. You can answer and control sessions via the SDK methods documented
+of an webrtcSessions event. You can answer and control sessions via the methods documented
 below. Most call control actions, however, should be done via the PureCloud Public
 API (or the Public API javascript SDK).
 
@@ -86,11 +86,13 @@ are detailed below.
 
 ###### Behavior notes
 
-- By default, the SDK will keep all active sessions active if the WebSocket disconnects.
-It is the consuming application's responsibility to end all pending or active sessions after a
-disconnect in the event that it doesn't recover. This behavior can be disabled by providing
-`sessionSurvivability: false` in the SDK constructor options. If this is set to false, if
-the WebSocket connection drops, all active WebRTC connections will be disconnected.
+- By default, the streaming client will keep all active sessions active if the
+WebSocket disconnects. It is the consuming application's responsibility to end
+all pending or active sessions after a disconnect in the event that it doesn't
+recover. This behavior can be disabled by providing
+`rtcSessionSurvivability: false` in the streaming client constructor options.
+When this is set to false and the WebSocket connection drops, all active WebRTC
+connections will be disconnected.
 
 - In the case of an outbound call, the application initiating the call should
 automatically accept the pending session, which should have a conversationId
@@ -102,10 +104,10 @@ actually connects the call audio.
 
 - When a client sends a POST to conversations/calls (from her desired client)
 for a conversation to the Public API, asynchronously, she will receive a pending
-session event from the SDK and a response from the public API with the `conversationId`
-for the conversation. If only handling outbound calls placed by your client, these
-can be correlated by conversationId together, and should not be expected to
-arrive in a guaranteed order.
+session event from the streaming clinet and a response from the public API with
+the `conversationId` for the conversation. If only handling outbound calls
+placed by your client, these can be correlated by conversationId together, and
+should not be expected to arrive in a guaranteed order.
 
 #### Setup
 
@@ -118,6 +120,9 @@ After creating an instance of the streaming client, the following APIs are avail
 
 `setIceServers(iceServers) : void` - Set the ICE servers to use in call negotiation
 
+- arguments
+    - `Array iceServer` - See [mdn reference](https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer)
+
 `getIceServers() : Array iceServers` - Get the ICE servers currently available
 
 `on(event, handler) : void` - Create event handlers
@@ -127,7 +132,7 @@ After creating an instance of the streaming client, the following APIs are avail
 `endRtcSessions(options, reason, callback)` - End matching sessions
 
 - arguments
-    - `Object opts` with properties:
+    - `Object options` with properties:
         - `String jid` - when provided, only sessions with matching remote peers will be ended
     - `String reason` - allows setting a reason for ending the session. Defaults to `success`
         available options defined in https://xmpp.org/extensions/xep-0166.html#def-reason
@@ -137,7 +142,7 @@ After creating an instance of the streaming client, the following APIs are avail
 - arguments
     - `String sessionId` - the id of the session to accept
 
-`rejectRtcSession(sessionId, silent)`
+`rejectRtcSession(sessionId)`
 
 - arguments
     - `String sessionId` - the id of the session to reject
@@ -202,7 +207,7 @@ messages for the session manager
 ##### Session level events.
 
 Session level events are events emitted from the `session` objects themselves,
-not the SDK instance library. These can be used if you want lower level access
+not the streaming client or extension. These can be used if you want lower level access
 and control.
 
 `session.on('terminated', (session, reason) => {})` - the session was terminated
