@@ -279,6 +279,7 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       createRtcSession: function ({ jid, sid, stream, peerConstraints, peerConnectionConstraints }) {
+        // outbound video chat
         this.logger.info('video', 'startVideoChat', jid);
 
         peerConstraints = peerConstraints || { offerToReceiveAudio: true, offerToReceiveVideo: true };
@@ -316,6 +317,8 @@ class JingleSessionManager extends WildEmitter {
       }.bind(this),
 
       initiateRtcSession: function (opts) {
+        // send media presence to join conference or screen screenRecording
+        // or send propose to single client for 1:1 video chat
         const session = {
           to: opts.jid,
           propose: {
@@ -390,7 +393,8 @@ class JingleSessionManager extends WildEmitter {
         if (jid) {
           this.handleEndRtcSessionsWithJid({ jid, reason });
 
-          return callback();
+          // TODO: can we kill callback? This seems useless
+          return callback(null);
         } else {
           this.jingleJs.endAllSessions(reason);
           this.pendingSessions = {};
@@ -555,7 +559,7 @@ class JingleSessionManager extends WildEmitter {
         }
         this.pendingSessions[stanza.propose.id] = stanza;
         const roomJid = (stanza.ofrom && stanza.ofrom.full) || stanza.from.full || stanza.from;
-        return this.emit('requestIncomingRtcSession', {
+        return this.emit(events.REQUEST_INCOMING_RTCSESSION, {
           sessionId: stanza.propose.id,
           conversationId: raw.propose.xml.attrs['inin-cid'],
           autoAnswer: raw.propose.xml.attrs['inin-autoanswer'] === 'true',
