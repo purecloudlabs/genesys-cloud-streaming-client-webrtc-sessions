@@ -491,7 +491,7 @@ test('createRtcSession uses defaults', t => {
   sessionManager.expose.createRtcSession(options);
 });
 
-test('createRtcSession should emit error if an exception occurs when creating MediaSession', t => {
+test('createRtcSession should emit error if an exception occurs when creating MediaSession2', t => {
   t.plan(0);
   const options = {
     jid: 'flashbang@storm.net',
@@ -515,6 +515,9 @@ test('createRtcSession should emit error if an exception occurs when creating Me
       }
     }
   };
+  sandbox.stub(sessionManager.jingleJs, 'addSession').callsFake((session) => {
+    sinon.stub(session, 'start');
+  });
   sessionManager.expose.createRtcSession(options);
   sandbox.stub(sessionManager, 'emit').callsFake((event, data) => {
     t.is(event, events.RTCSESSION_ERROR);
@@ -546,7 +549,9 @@ test('createRtcSession should addSession and start', t => {
       }
     }
   };
-  sandbox.stub(sessionManager.jingleJs, 'addSession');
+  sandbox.stub(sessionManager.jingleJs, 'addSession').callsFake((session) => {
+    sinon.stub(session, 'start');
+  });
   sessionManager.expose.createRtcSession(options);
   t.is(sessionManager.jingleJs.addSession.called, true);
 });
