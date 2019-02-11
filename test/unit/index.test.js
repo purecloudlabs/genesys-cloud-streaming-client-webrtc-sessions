@@ -215,6 +215,48 @@ test('prepareSession should return Media session', t => {
   t.is(mediaSession.peerID, 'somebody@conference');
 });
 
+test('onIceCandidate should filter ipv6 candidates by default', async t => {
+  const ipv6Candidate = 'a=candidate:4089960842 1 udp 2122197247 2603:900a:160a:aa00:540:b412:2a2d:1f5b 53622 typ host generation 0';
+  const ipv4Candidate = 'a=candidate:2999745851 1 udp 2122129151 192.168.56.1 53623 typ host generation 0';
+
+  const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
+  const spy = sinon.stub(mediaSession, 'send');
+
+  mediaSession.onIceCandidate({}, {
+    candidate: {
+      candidate: ipv6Candidate
+    }
+  });
+
+  mediaSession.onIceCandidate({}, {
+    candidate: {
+      candidate: ipv4Candidate
+    }
+  });
+  sinon.assert.calledOnce(spy);
+});
+
+test('onIceCandidate should not filter ipv6 candidates if allowIPv6', async t => {
+  const ipv6Candidate = 'a=candidate:4089960842 1 udp 2122197247 2603:900a:160a:aa00:540:b412:2a2d:1f5b 53622 typ host generation 0';
+  const ipv4Candidate = 'a=candidate:2999745851 1 udp 2122129151 192.168.56.1 53623 typ host generation 0';
+
+  const mediaSession = sessionManager.jingleJs.prepareSession({ peerID: 'somebody@conference' });
+  const spy = sinon.stub(mediaSession, 'send');
+
+  mediaSession.onIceCandidate({ allowIPv6: true }, {
+    candidate: {
+      candidate: ipv6Candidate
+    }
+  });
+
+  mediaSession.onIceCandidate({ allowIPv6: true }, {
+    candidate: {
+      candidate: ipv4Candidate
+    }
+  });
+  sinon.assert.calledTwice(spy);
+});
+
 test.serial('prepareSession should wire up data channel events', async t => {
   t.plan(3);
   sessionManager.config.signalEndOfCandidates = true;

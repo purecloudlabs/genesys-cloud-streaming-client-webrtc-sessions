@@ -61,6 +61,21 @@ function prepareSession (options) {
   return new MediaSession(options);
 }
 
+const existingOnIceCandidate = MediaSession.prototype.onIceCandidate;
+MediaSession.prototype.onIceCandidate = function (opts, candidate) {
+  if (!opts.allowIPv6) {
+    const addressRegex = /.+udp [^ ]+ ([^ ]+).*typ host/;
+    const matches = addressRegex.exec(candidate.candidate.candidate);
+
+    const ipv4Regex = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
+    if (matches && !matches[1].match(ipv4Regex)) {
+      this._log('info', 'Filtering out IPv6 candidate', candidate.candidate);
+      return;
+    }
+  }
+  existingOnIceCandidate.call(this, ...arguments);
+};
+
 class JingleSessionManager extends WildEmitter {
   constructor (client, clientOptions = {}) {
     super();
@@ -140,7 +155,8 @@ class JingleSessionManager extends WildEmitter {
       signalEndOfCandidates: clientOptions.signalEndOfCandidates !== false,
       signalIceConnected: clientOptions.signalIceConnected !== false,
       rtcSessionSurvivability: clientOptions.rtcSessionSurvivability !== false,
-      disableEOCShortCircuit: clientOptions.disableEOCShortCircuit !== false
+      disableEOCShortCircuit: clientOptions.disableEOCShortCircuit !== false,
+      allowIPv6: clientOptions.allowIPv6
     };
     this.jingleJs = new Jingle({
       iceServers: this.config.iceServers,
@@ -149,6 +165,7 @@ class JingleSessionManager extends WildEmitter {
         options.signalEndOfCandidates = this.config.signalEndOfCandidates;
         options.signalIceConnected = this.config.signalIceConnected;
         options.disableEOCShortCircuit = this.config.disableEOCShortCircuit;
+        options.allowIPv6 = this.config.allowIPv6;
         return prepareSession(options);
       }
     });
