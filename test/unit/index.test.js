@@ -491,7 +491,7 @@ test('createRtcSession uses defaults', t => {
   sessionManager.expose.createRtcSession(options);
 });
 
-test('createRtcSession should emit error if an exception occurs when creating MediaSession2', t => {
+test('createRtcSession should emit error if an exception occurs when creating MediaSession', t => {
   t.plan(0);
   const options = {
     jid: 'flashbang@storm.net',
