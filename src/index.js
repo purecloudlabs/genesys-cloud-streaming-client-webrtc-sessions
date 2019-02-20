@@ -79,6 +79,12 @@ MediaSession.prototype.onIceCandidate = function (opts, e) {
   existingOnIceCandidate.call(this, ...arguments);
 };
 
+MediaSession.prototype._log = function (level, message, details) {
+  // for backward compatibility, but also logging details
+  const msg = `${this.sid}:${message}`;
+  this.emit(`log:${level}`, msg, details);
+};
+
 class JingleSessionManager extends WildEmitter {
   constructor (client, clientOptions = {}) {
     super();
