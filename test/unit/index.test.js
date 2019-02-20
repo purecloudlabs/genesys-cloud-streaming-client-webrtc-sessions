@@ -233,7 +233,14 @@ test('onIceCandidate should filter ipv6 candidates by default', async t => {
       candidate: ipv4Candidate
     }
   });
+
   sinon.assert.calledOnce(spy);
+
+  mediaSession.onIceCandidate({}, {
+    candidate: null
+  });
+
+  sinon.assert.calledTwice(spy);
 });
 
 test('onIceCandidate should not filter ipv6 candidates if allowIPv6', async t => {

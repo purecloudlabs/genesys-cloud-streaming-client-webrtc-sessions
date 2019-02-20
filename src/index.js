@@ -62,16 +62,19 @@ function prepareSession (options) {
 }
 
 const existingOnIceCandidate = MediaSession.prototype.onIceCandidate;
-MediaSession.prototype.onIceCandidate = function (opts, candidate) {
-  if (!opts.allowIPv6) {
+MediaSession.prototype.onIceCandidate = function (opts, e) {
+  if (e.candidate && !opts.allowIPv6) {
     const addressRegex = /.+udp [^ ]+ ([^ ]+).*typ host/;
-    const matches = addressRegex.exec(candidate.candidate.candidate);
+    const matches = addressRegex.exec(e.candidate.candidate);
 
     const ipv4Regex = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
     if (matches && !matches[1].match(ipv4Regex)) {
-      this._log('info', 'Filtering out IPv6 candidate', candidate.candidate);
+      this._log('debug', 'Filtering out IPv6 candidate', e.candidate.candidate);
       return;
     }
+  }
+  if (e.candidate) {
+    this._log('debug', 'Processing ice candidate', e.candidate.candidate);
   }
   existingOnIceCandidate.call(this, ...arguments);
 };
