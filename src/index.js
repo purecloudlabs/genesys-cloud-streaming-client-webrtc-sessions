@@ -81,7 +81,7 @@ MediaSession.prototype.onIceCandidate = function (opts, e) {
 
 MediaSession.prototype._log = function (level, message, details) {
   // for backward compatibility, but also logging details
-  const msg = `${this.sid}:${message}`;
+  const msg = `${this.sid}: ${message}`;
   this.emit(`log:${level}`, msg, details);
 };
 
