@@ -232,8 +232,8 @@ class JingleSessionManager extends WildEmitter {
       return this.emit(events.INCOMING_RTCSESSION, session);
     });
 
-    this.jingleJs.on('log:*', (level, msg) => {
-      return this.emit(events.TRACE_RTCSESSION, level.split(':')[1], msg);
+    this.jingleJs.on('log:*', (level, msg, details) => {
+      return this.emit(events.TRACE_RTCSESSION, level.split(':')[1], msg, details);
     });
 
     this.jingleJs.on('error', req => {
