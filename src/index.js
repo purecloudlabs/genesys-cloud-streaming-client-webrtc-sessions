@@ -165,7 +165,7 @@ class JingleSessionManager extends WildEmitter {
       signalIceConnected: clientOptions.signalIceConnected !== false,
       rtcSessionSurvivability: clientOptions.rtcSessionSurvivability !== false,
       disableEOCShortCircuit: clientOptions.disableEOCShortCircuit !== false,
-      allowIPv6: clientOptions.allowIPv6
+      allowIPv6: clientOptions.allowIPv6 === true
     };
     this.jingleJs = new Jingle({
       iceServers: this.config.iceServers,
