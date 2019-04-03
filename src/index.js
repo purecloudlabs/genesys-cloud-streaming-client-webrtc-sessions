@@ -509,6 +509,7 @@ class JingleSessionManager extends WildEmitter {
         this.emit('send', {
           to: session.peerID,
           from: this.jid.bare,
+          type: 'set',
           jingle: {
             action: 'session-info',
             sid: session.sid,
@@ -521,6 +522,7 @@ class JingleSessionManager extends WildEmitter {
         this.emit('send', {
           to: session.peerID,
           from: this.jid.bare,
+          type: 'set',
           jingle: {
             action: 'session-info',
             sid: session.sid,
