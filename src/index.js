@@ -175,6 +175,7 @@ class JingleSessionManager extends WildEmitter {
         options.signalIceConnected = this.config.signalIceConnected;
         options.disableEOCShortCircuit = this.config.disableEOCShortCircuit;
         options.allowIPv6 = this.config.allowIPv6;
+        options.iceServers = this.config.iceServers;
         return prepareSession(options);
       }
     });
@@ -289,6 +290,7 @@ class JingleSessionManager extends WildEmitter {
       config: this.config,
       setIceServers: function (iceServers) {
         this.config.iceServers = iceServers;
+        this.jingleJs.config.peerConnectionConfig.iceServers = iceServers;
         this.jingleJs.iceServers = iceServers;
       }.bind(this),
 
