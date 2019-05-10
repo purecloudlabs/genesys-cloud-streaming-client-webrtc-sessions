@@ -54,19 +54,31 @@ class MockStanzaIo extends WildEmitter {
   }
 
   send () {}
+  getServices () {}
+}
+
+class MockClient {
+  constructor (jid) {
+    this._stanzaio = new MockStanzaIo(jid);
+    this.logger = { debug () {}, info () {}, warn () {}, error () {} };
+  }
+
+  on () {
+    this._stanzaio.on(...arguments);
+  }
 }
 
 test.beforeEach(() => {
-  global.window = global;
-  global.RTCPeerConnection = MockRTCPeerConnection();
-  global.MediaSession = MockMediaSession();
-  const stanzaio = new MockStanzaIo('theOneJidToRuleThemAll12345');
-  sandbox = sinon.sandbox.create();
-  sessionManager = new SessionManager({
-    _stanzaio: stanzaio,
-    logger: { debug () {}, info () {}, warn () {}, error () {} }
-  });
+  global.window.RTCPeerConnection = global.RTCPeerConnection = MockRTCPeerConnection;
+  global.window.MediaSession = global.MediaSession = MockMediaSession;
 });
+
+const beforeEach = function () {
+  const sandbox = sinon.createSandbox();
+  const client = new MockClient('theOneJidToRuleThemAll12345');
+  const sessionManager = new SessionManager(client);
+  return { stanzaio: client._stanzaio, sessionManager, sandbox };
+};
 
 test.afterEach(() => {
   delete global.RTCPeerConnection;
@@ -77,8 +89,9 @@ test.afterEach(() => {
 /* custom stanza definitions */
 test('screenstart stanza should be defined properly', t => {
   const stanzaio = XMPP.createClient();
-
-  const webrtcSessions = new SessionManager({ _stanzaio: stanzaio });
+  const client = new MockClient();
+  client._stanzaio = stanzaio;
+  const webrtcSessions = new SessionManager(client);
   const IQ = webrtcSessions.client._stanzaio.stanzas.getIQ();
   const iq = new IQ({ to: 'test', from: 'test', jingle: { sid: 'test', action: 'session-info', screenstart: {} } });
   t.truthy(iq.toString().indexOf('screen-start'), 'stanza should include a "screen-start" element');
@@ -86,8 +99,9 @@ test('screenstart stanza should be defined properly', t => {
 
 test('screenstop stanza should be defined properly', t => {
   const stanzaio = XMPP.createClient();
-
-  const webrtcSessions = new SessionManager({ _stanzaio: stanzaio });
+  const client = new MockClient();
+  client._stanzaio = stanzaio;
+  const webrtcSessions = new SessionManager(client);
   const IQ = webrtcSessions.client._stanzaio.stanzas.getIQ();
   const iq = new IQ({ to: 'test', from: 'test', jingle: { sid: 'test', action: 'session-info', screenstop: {} } });
   t.truthy(iq.toString().indexOf('screen-stop'), 'stanza should include a "screen-stop" element');
@@ -103,12 +117,12 @@ test('sessionManager should take in a client with a stanzaio property and client
   const clientOptions = {
     iceServers: []
   };
-  sessionManager = new SessionManager({ _stanzaio: stanzaio }, clientOptions);
+  const sessionManager = new SessionManager({ _stanzaio: stanzaio, on () {} }, clientOptions);
   t.truthy(sessionManager);
 });
 
 test('sessionManager should allow for rtcSessionSurvivability = true', t => {
-  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const client = new MockClient('somejid@example.com');
   const clientOptions = {
     iceServers: [],
     rtcSessionSurvivability: true
@@ -129,7 +143,7 @@ test('sessionManager should allow for rtcSessionSurvivability = true', t => {
 });
 
 test('sessionManager should allow for rtcSessionSurvivability = false', t => {
-  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const client = new MockClient('somejid@example.com');
   const clientOptions = {
     iceServers: [],
     rtcSessionSurvivability: false
@@ -151,7 +165,7 @@ test('sessionManager should allow for rtcSessionSurvivability = false', t => {
 
 test('sessionManager will not support features of RTCPeerConnection is not defined', t => {
   global.window.RTCPeerConnection = null;
-  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const client = new MockClient('somejid@example.com');
   const clientOptions = {
     iceServers: []
   };
@@ -161,7 +175,7 @@ test('sessionManager will not support features of RTCPeerConnection is not defin
 });
 
 test('exposeEvents', t => {
-  const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
+  const client = new MockClient('somejid@example.com');
   const clientOptions = {
     iceServers: []
   };
@@ -171,10 +185,8 @@ test('exposeEvents', t => {
 
 test('proxyEvents should proxy specific events up from the jingle session manager', t => {
   t.plan(6);
-  const client = {
-    _stanzaio: new MockStanzaIo('somejid@example.com'),
-    logger: { debug: sandbox.stub() }
-  };
+  const client = new MockClient('somejid@example.com');
+  client.logger = { debug: sinon.stub() };
   const clientOptions = {
     iceServers: []
   };
@@ -882,6 +894,40 @@ test('setIceServers and getIceServers cooperate', t => {
   sessionManager.expose.setIceServers(mockIceServers);
   t.is(sessionManager.jingleJs.iceServers, mockIceServers);
   t.is(sessionManager.expose.getIceServers(), mockIceServers);
+});
+
+test('refreshIceServers will call getServices on stanzaio and setIceServers with the result', async t => {
+  const { sessionManager, sandbox } = beforeEach();
+  const mockIceServers = [ { urls: 'asdf.exmple.com' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').returns(Promise.resolve(mockIceServers));
+  sandbox.stub(sessionManager.expose, 'setIceServers');
+  await sessionManager.expose.refreshIceServers();
+  sinon.assert.calledOnce(sessionManager.client._stanzaio.getServices);
+  t.is(sessionManager.jingleJs.iceServers, mockIceServers);
+});
+
+test('constructor will call refreshIceServers immediately if the client is connected', async t => {
+  const { sandbox } = beforeEach();
+  const client = new MockClient('somejid@example.com');
+  const mockIceServers = [ { urls: 'asdf.exmple.com' } ];
+  client.logger = { debug () {} };
+  client.connected = true;
+  sandbox.stub(client._stanzaio, 'getServices').returns(Promise.resolve(mockIceServers));
+  const sessionManager = new SessionManager(client);
+  sinon.assert.calledOnce(sessionManager.client._stanzaio.getServices);
+  await new Promise(resolve => setTimeout(resolve, 10));
+  t.is(sessionManager.jingleJs.iceServers, mockIceServers);
+});
+
+test('constructor will call refreshIceServers when the client becomes connected', async t => {
+  const { sessionManager, sandbox } = beforeEach();
+  const mockIceServers = [ { urls: 'asdf.exmple.com' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').returns(Promise.resolve(mockIceServers));
+  sinon.assert.notCalled(sessionManager.client._stanzaio.getServices);
+  sessionManager.client._stanzaio.emit('connected');
+  sinon.assert.calledOnce(sessionManager.client._stanzaio.getServices);
+  await new Promise(resolve => setTimeout(resolve, 10));
+  t.is(sessionManager.jingleJs.iceServers, mockIceServers);
 });
 
 test('on and off hook up to the session manager directly', t => {
