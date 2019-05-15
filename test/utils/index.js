@@ -1,44 +1,33 @@
 'use strict';
 
-function MockRTCPeerConnection () {
-  const RTCPeerConnection = function () {
+class MockRTCPeerConnection {
+  addEventListener () {}
+  addStream () {}
+  createOffer () { return Promise.resolve(); }
+  setLocalDescription () {}
+  setRemoteDescription () {}
+  createAnswer () { return Promise.resolve(); }
+  gatherStats () {}
+  getStats () {
     return {
-      addEventListener: () => {},
-      addStream: () => {},
-      createOffer: () => Promise.resolve(),
-      setLocalDescription: () => {},
-      setRemoteDescription: () => {},
-      createAnswer: () => Promise.resolve(),
-      gatherStats: () => {},
-      getStats: () => {
-        return {
-          then: () => {}
-        };
-      },
-      gotStats: () => {},
-      getRemoteStreams: () => {},
-      createDataChannel: () => {
-        return {
-          onmessage: null,
-          addEventListener: () => {}
-        };
-      },
-      offer: () => {},
-      getLocalStreams: function () {},
-      onIceCandidate: function () {},
-      onIceEndOfCandidates: function () {},
-      onIceStateChange: function () {}
+      then: () => {}
     };
-  };
-  return RTCPeerConnection;
+  }
+  gotStats () {}
+  getRemoteStreams () {}
+  createDataChannel () {
+    return {
+      onmessage: null,
+      addEventListener: () => {}
+    };
+  }
+  offer () {}
+  getLocalStreams () {}
+  onIceCandidate () {}
+  onIceEndOfCandidates () {}
+  onIceStateChange () {}
 }
-
-function MockMediaSession () {
-  const MyMediaSession = function () {};
-  return new MyMediaSession();
-}
-
 module.exports = {
   MockRTCPeerConnection,
-  MockMediaSession
+  MockMediaSession: function () {}
 };
