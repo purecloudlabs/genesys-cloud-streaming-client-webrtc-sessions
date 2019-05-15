@@ -57,9 +57,8 @@ class MockStanzaIo extends WildEmitter {
 }
 
 test.beforeEach(() => {
-  global.window = global;
-  global.RTCPeerConnection = MockRTCPeerConnection();
-  global.MediaSession = MockMediaSession();
+  global.window.RTCPeerConnection = global.RTCPeerConnection = MockRTCPeerConnection();
+  global.window.MediaSession = global.MediaSession = MockMediaSession();
   const stanzaio = new MockStanzaIo('theOneJidToRuleThemAll12345');
   sandbox = sinon.sandbox.create();
   sessionManager = new SessionManager({
@@ -70,7 +69,9 @@ test.beforeEach(() => {
 
 test.afterEach(() => {
   delete global.RTCPeerConnection;
+  delete global.window.RTCPeerConnection;
   delete global.MediaSession;
+  delete global.window.MediaSession;
   sandbox.restore();
 });
 
@@ -151,6 +152,7 @@ test('sessionManager should allow for rtcSessionSurvivability = false', t => {
 
 test('sessionManager will not support features of RTCPeerConnection is not defined', t => {
   global.window.RTCPeerConnection = null;
+  global.RTCPeerConnection = null;
   const client = { _stanzaio: new MockStanzaIo('somejid@example.com') };
   const clientOptions = {
     iceServers: []
