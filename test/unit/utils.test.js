@@ -2,14 +2,14 @@
 
 const test = require('ava');
 const sinon = require('sinon');
+let sandbox;
 
 const {
   logger
 } = require('../../utils');
 
-let sandbox;
-test.beforeEach(() => {
-  sandbox = sinon.sandbox.create();
+test.before(() => {
+  sandbox = sinon.createSandbox();
   sandbox.stub(logger, 'debug');
   sandbox.stub(logger, 'warn');
   sandbox.stub(logger, 'error');

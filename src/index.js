@@ -183,7 +183,7 @@ class JingleSessionManager extends WildEmitter {
     this.pendingIqs = {};
 
     // can ignore up to 10 sessions for up to 6 hours
-    this.ignoredSessions = LRU({ max: 10, maxAge: 10 * 60 * 60 * 6 });
+    this.ignoredSessions = new LRU({ max: 10, maxAge: 10 * 60 * 60 * 6 });
 
     this.logger = client.logger;
 
