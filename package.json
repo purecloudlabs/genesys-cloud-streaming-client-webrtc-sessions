@@ -80,7 +80,7 @@
     "jingle-purecloud": "^4.0.0",
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
-    "lru-cache": "^4.1.2",
+    "lru-cache": "^5.1.1",
     "stanza": "^11.3.2",
     "uuid": "^3.1.0",
     "wildemitter": "^1.2.0"
@@ -92,7 +92,7 @@
     "babel-plugin-istanbul": "^5.1.1",
     "babel-preset-env": "^1.6.1",
     "browser-env": "^3.2.6",
-    "jxt": "^3.0.8",
+    "jxt": "^4.0.2",
     "jxt-xmpp": "^3.2.2",
     "jxt-xmpp-types": "^3.0.0",
     "nyc": "^13.0.0",
