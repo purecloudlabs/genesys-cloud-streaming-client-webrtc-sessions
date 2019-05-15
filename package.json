@@ -1,6 +1,6 @@
 {
   "name": "purecloud-streaming-client-webrtc-sessions",
-  "version": "7.0.24",
+  "version": "7.1.0",
   "description": "WebRTC Extensions for the PureCloud Streaming Client SDK",
   "main": "dist/webrtc-sessions.js",
   "pre-push": [
@@ -81,7 +81,7 @@
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
     "lru-cache": "^4.1.2",
-    "stanza.io": "^9.1.0",
+    "stanza": "^11.3.2",
     "uuid": "^3.1.0",
     "wildemitter": "^1.2.0"
   },
