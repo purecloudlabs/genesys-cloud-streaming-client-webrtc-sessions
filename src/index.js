@@ -197,6 +197,14 @@ class JingleSessionManager extends WildEmitter {
 
     this.client = client;
 
+    client.on('connected', () => {
+      this.refreshIceServers();
+    });
+
+    if (client.connected) {
+      this.refreshIceServers();
+    }
+
     this.setupStanzaHandlers();
     STANZA_EVENTS.forEach(e => stanzaio.on(e, this.stanzaHandlers.jingle));
     stanzaio.on('stream:data', (data) => {
@@ -267,6 +275,15 @@ class JingleSessionManager extends WildEmitter {
     // no-op - we do a custom handler
   }
 
+  refreshIceServers () {
+    return this.client._stanzaio.getServices(this.client._stanzaio.jid.domain, 'turn')
+      .then((services) => {
+        this.logger.debug('TURN server discovery result', services);
+        this.expose.setIceServers(services);
+        return this.jingleJs.iceServers;
+      });
+  }
+
   handleEndRtcSessionsWithJid ({ jid, reason }) {
     Object.keys(this.jingleJs.peers).forEach((peerId) => {
       if (peerId.indexOf(jid) < 0) {
@@ -296,6 +313,10 @@ class JingleSessionManager extends WildEmitter {
 
       getIceServers: function () {
         return this.jingleJs.iceServers;
+      }.bind(this),
+
+      refreshIceServers: function () {
+        return this.refreshIceServers();
       }.bind(this),
 
       on: function (event, handler) {

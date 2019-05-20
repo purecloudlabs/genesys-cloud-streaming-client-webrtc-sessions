@@ -45,7 +45,7 @@
     "concurrency": 5,
     "failFast": true,
     "failWithoutAssertions": false,
-    "tap": true,
+    "tap": false,
     "powerAssert": true,
     "require": [
       "@babel/register",
