@@ -276,10 +276,14 @@ class JingleSessionManager extends WildEmitter {
   }
 
   refreshIceServers () {
-    return this.client._stanzaio.getServices(this.client._stanzaio.jid.domain, 'turn')
+    const getServices = (type) => this.client._stanzaio.getServices(this.client._stanzaio.jid.domain, type);
+    const turn = getServices('turn');
+    const stun = getServices('stun');
+    return Promise.all([turn, stun])
       .then((services) => {
-        this.logger.debug('TURN server discovery result', services);
-        this.expose.setIceServers(services);
+        this.logger.debug('STUN/TURN server discovery result', services);
+        const iceServers = [...services[0], ...services[1]];
+        this.expose.setIceServers(iceServers);
         return this.jingleJs.iceServers;
       });
   }

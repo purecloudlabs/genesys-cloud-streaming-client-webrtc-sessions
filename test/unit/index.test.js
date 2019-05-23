@@ -926,36 +926,60 @@ test('setIceServers and getIceServers cooperate', t => {
 
 test('refreshIceServers will call getServices on stanzaio and setIceServers with the result', async t => {
   const { sessionManager, sandbox } = beforeEach();
-  const mockIceServers = [ { urls: 'asdf.exmple.com' } ];
-  sandbox.stub(sessionManager.client._stanzaio, 'getServices').returns(Promise.resolve(mockIceServers));
+  const mockStunServers = [ { urls: 'asdf.exmple.com' } ];
+  const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
+    if (type === 'stun') {
+      return Promise.resolve(mockStunServers);
+    }
+    if (type === 'turn') {
+      return Promise.resolve(mockTurnServers);
+    }
+  });
   sandbox.stub(sessionManager.expose, 'setIceServers');
   await sessionManager.expose.refreshIceServers();
-  sinon.assert.calledOnce(sessionManager.client._stanzaio.getServices);
-  t.is(sessionManager.jingleJs.iceServers, mockIceServers);
+  sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
+  t.deepEqual(sessionManager.jingleJs.iceServers, [...mockTurnServers, ...mockStunServers]);
 });
 
 test('constructor will call refreshIceServers immediately if the client is connected', async t => {
   const { sandbox } = beforeEach();
   const client = new MockClient('somejid@example.com');
-  const mockIceServers = [ { urls: 'asdf.exmple.com' } ];
+  const mockStunServers = [ { urls: 'asdf.exmple.com' } ];
+  const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
   client.logger = { debug () {} };
   client.connected = true;
-  sandbox.stub(client._stanzaio, 'getServices').returns(Promise.resolve(mockIceServers));
+  sandbox.stub(client._stanzaio, 'getServices').callsFake(function (jid, type) {
+    if (type === 'stun') {
+      return Promise.resolve(mockStunServers);
+    }
+    if (type === 'turn') {
+      return Promise.resolve(mockTurnServers);
+    }
+  });
   const sessionManager = new SessionManager(client);
-  sinon.assert.calledOnce(sessionManager.client._stanzaio.getServices);
+  sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
   await new Promise(resolve => setTimeout(resolve, 10));
-  t.is(sessionManager.jingleJs.iceServers, mockIceServers);
+  t.deepEqual(sessionManager.jingleJs.iceServers, [...mockTurnServers, ...mockStunServers]);
 });
 
 test('constructor will call refreshIceServers when the client becomes connected', async t => {
   const { sessionManager, sandbox } = beforeEach();
-  const mockIceServers = [ { urls: 'asdf.exmple.com' } ];
-  sandbox.stub(sessionManager.client._stanzaio, 'getServices').returns(Promise.resolve(mockIceServers));
+  const mockStunServers = [ { urls: 'asdf.exmple.com' } ];
+  const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
+    if (type === 'stun') {
+      return Promise.resolve(mockStunServers);
+    }
+    if (type === 'turn') {
+      return Promise.resolve(mockTurnServers);
+    }
+  });
   sinon.assert.notCalled(sessionManager.client._stanzaio.getServices);
   sessionManager.client._stanzaio.emit('connected');
-  sinon.assert.calledOnce(sessionManager.client._stanzaio.getServices);
+  sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
   await new Promise(resolve => setTimeout(resolve, 10));
-  t.is(sessionManager.jingleJs.iceServers, mockIceServers);
+  t.deepEqual(sessionManager.jingleJs.iceServers, [...mockTurnServers, ...mockStunServers]);
 });
 
 test('on and off hook up to the session manager directly', t => {
