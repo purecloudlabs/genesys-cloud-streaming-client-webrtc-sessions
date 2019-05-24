@@ -283,8 +283,24 @@ class JingleSessionManager extends WildEmitter {
       .then((responses) => {
         const turnServers = responses[0].services.services;
         const stunServers = responses[1].services.services;
-        this.logger.debug('STUN/TURN server discovery result', responses);
-        const iceServers = [...turnServers, ...stunServers];
+        this.logger.debug('STUN/TURN server discovery result', { turnServers, stunServers });
+        const iceServers = [...turnServers, ...stunServers].map(service => {
+          const ice = { type: service.type };
+          const port = service.port ? `:${service.port}` : '';
+          ice.urls = `${service.type}:${service.host}${port}`;
+          if (['turn', 'turns'].includes(service.type)) {
+            if (service.transport && (service.transport !== 'udp')) {
+              ice.urls += `?transport=${service.transport}`;
+            }
+            if (service.username) {
+              ice.username = service.username;
+            }
+            if (service.password) {
+              ice.credential = service.password;
+            }
+          }
+          return ice;
+        });
         this.expose.setIceServers(iceServers);
         return this.jingleJs.iceServers;
       });

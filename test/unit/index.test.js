@@ -926,8 +926,8 @@ test('setIceServers and getIceServers cooperate', t => {
 
 test('refreshIceServers will call getServices on stanzaio and setIceServers with the result', async t => {
   const { sessionManager, sandbox } = beforeEach();
-  const mockStunServers = [ { urls: 'asdf.exmple.com' } ];
-  const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
+  const mockStunServers = [ { host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' } ];
+  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
       return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
@@ -939,14 +939,20 @@ test('refreshIceServers will call getServices on stanzaio and setIceServers with
   sandbox.stub(sessionManager.expose, 'setIceServers');
   await sessionManager.expose.refreshIceServers();
   sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
-  t.deepEqual(sessionManager.jingleJs.iceServers, [...mockTurnServers, ...mockStunServers]);
+  console.warn(sessionManager.jingleJs.iceServers);
+  t.deepEqual(sessionManager.jingleJs.iceServers.find(s => s.type === 'turn'), {
+    type: 'turn',
+    urls: `turn:asdf.example.com:3297`,
+    username: 'asdfk',
+    credential: 'qwerty'
+  });
 });
 
 test('constructor will call refreshIceServers immediately if the client is connected', async t => {
   const { sandbox } = beforeEach();
   const client = new MockClient('somejid@example.com');
-  const mockStunServers = [ { urls: 'asdf.exmple.com' } ];
-  const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
+  const mockStunServers = [ { host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' } ];
+  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
   client.logger = { debug () {} };
   client.connected = true;
   sandbox.stub(client._stanzaio, 'getServices').callsFake(function (jid, type) {
@@ -960,13 +966,19 @@ test('constructor will call refreshIceServers immediately if the client is conne
   const sessionManager = new SessionManager(client);
   sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
   await new Promise(resolve => setTimeout(resolve, 10));
-  t.deepEqual(sessionManager.jingleJs.iceServers, [...mockTurnServers, ...mockStunServers]);
+  t.deepEqual(sessionManager.jingleJs.iceServers.find(s => s.type === 'turn'), {
+    type: 'turn',
+    urls: `turn:asdf.example.com:3297`,
+    username: 'asdfk',
+    credential: 'qwerty'
+  });
 });
 
 test('constructor will call refreshIceServers when the client becomes connected', async t => {
   const { sessionManager, sandbox } = beforeEach();
-  const mockStunServers = [ { urls: 'asdf.exmple.com' } ];
-  const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
+  const mockStunServers = [ { host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' } ];
+  // different than standard to test other code paths
+  const mockTurnServers = [ { host: 'asdf.example.com', transport: 'tcp', type: 'turn' } ];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
       return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
@@ -979,7 +991,10 @@ test('constructor will call refreshIceServers when the client becomes connected'
   sessionManager.client._stanzaio.emit('connected');
   sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
   await new Promise(resolve => setTimeout(resolve, 10));
-  t.deepEqual(sessionManager.jingleJs.iceServers, [...mockTurnServers, ...mockStunServers]);
+  t.deepEqual(sessionManager.jingleJs.iceServers.find(s => s.type === 'turn'), {
+    type: 'turn',
+    urls: `turn:asdf.example.com?transport=tcp`
+  });
 });
 
 test('on and off hook up to the session manager directly', t => {
