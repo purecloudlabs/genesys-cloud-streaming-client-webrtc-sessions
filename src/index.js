@@ -280,9 +280,11 @@ class JingleSessionManager extends WildEmitter {
     const turn = getServices('turn');
     const stun = getServices('stun');
     return Promise.all([turn, stun])
-      .then((services) => {
-        this.logger.debug('STUN/TURN server discovery result', services);
-        const iceServers = [...services[0], ...services[1]];
+      .then((responses) => {
+        const turnServers = responses[0].services.services;
+        const stunServers = responses[1].services.services;
+        this.logger.debug('STUN/TURN server discovery result', responses);
+        const iceServers = [...turnServers, ...stunServers];
         this.expose.setIceServers(iceServers);
         return this.jingleJs.iceServers;
       });

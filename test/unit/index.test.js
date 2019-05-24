@@ -930,10 +930,10 @@ test('refreshIceServers will call getServices on stanzaio and setIceServers with
   const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
-      return Promise.resolve(mockStunServers);
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
     }
     if (type === 'turn') {
-      return Promise.resolve(mockTurnServers);
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockTurnServers } });
     }
   });
   sandbox.stub(sessionManager.expose, 'setIceServers');
@@ -951,10 +951,10 @@ test('constructor will call refreshIceServers immediately if the client is conne
   client.connected = true;
   sandbox.stub(client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
-      return Promise.resolve(mockStunServers);
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
     }
     if (type === 'turn') {
-      return Promise.resolve(mockTurnServers);
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockTurnServers } });
     }
   });
   const sessionManager = new SessionManager(client);
@@ -969,10 +969,10 @@ test('constructor will call refreshIceServers when the client becomes connected'
   const mockTurnServers = [ { urls: 'asdf.example.com', credentials: 'asdfk' } ];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
-      return Promise.resolve(mockStunServers);
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
     }
     if (type === 'turn') {
-      return Promise.resolve(mockTurnServers);
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockTurnServers } });
     }
   });
   sinon.assert.notCalled(sessionManager.client._stanzaio.getServices);
