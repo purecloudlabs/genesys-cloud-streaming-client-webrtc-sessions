@@ -199,7 +199,7 @@ test('proxyEvents should proxy specific events up from the jingle session manage
   sessionManager.on(events.INCOMING_RTCSESSION, session => t.is(session, mockSession));
   sessionManager.jingleJs.emit('incoming', mockSession);
 
-  sessionManager.on(events.OUTGOING_RTCSESSION_PROCEED, session => t.is(session, mockSession));
+  sessionManager.on(events.OUTGOING_RTCSESSION, session => t.is(session, mockSession));
   sessionManager.jingleJs.emit('outgoing', mockSession);
 
   const mockStanzaData = { to: 'foo', from: 'bar' };
@@ -856,6 +856,32 @@ test('rejectRtcSession will send two reject messages', t => {
   t.is(typeof sessionManager.pendingSessions.asdf, 'undefined');
 });
 
+test('requestStateDump should emit statedump', t => {
+  const requestId = '44sddk';
+
+  const { sessionManager, sandbox } = beforeEach();
+  sandbox.stub(sessionManager, 'emit');
+
+  const mediaSession = sessionManager.jingleJs.prepareSession({
+    peerID: 'somebody@example.com',
+    applicationTypes: [ ]
+  });
+
+  sessionManager.expose.requestStateDump(mediaSession, requestId);
+
+  sessionManager.emit.firstCall.calledWith({
+    to: `${mediaSession.peerID}/media-server`,
+    from: sessionManager.jid.bare,
+    jingle: {
+      action: 'session-info',
+      sid: mediaSession.sid,
+      statedump: {
+        requestId
+      }
+    }
+  });
+});
+
 test('notifyScreenShareStart should emit screenstart', t => {
   const { sessionManager, sandbox } = beforeEach();
   sandbox.stub(sessionManager, 'emit');
@@ -868,7 +894,7 @@ test('notifyScreenShareStart should emit screenstart', t => {
   sessionManager.expose.notifyScreenShareStart(mediaSession);
 
   sessionManager.emit.firstCall.calledWith({
-    to: mediaSession.peerID,
+    to: `${mediaSession.peerID}/media-server`,
     from: sessionManager.jid.bare,
     jingle: {
       action: 'session-info',
@@ -890,7 +916,7 @@ test('notifyScreenShareStop should emit screenstop', t => {
   sessionManager.expose.notifyScreenShareStop(mediaSession);
 
   sessionManager.emit.firstCall.calledWith({
-    to: mediaSession.peerID,
+    to: `${mediaSession.peerID}/media-server`,
     from: sessionManager.jid.bare,
     jingle: {
       action: 'session-info',

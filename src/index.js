@@ -134,6 +134,15 @@ class JingleSessionManager extends WildEmitter {
       }
     });
 
+    const StateDump = stanzaio.stanzas.define({
+      name: 'statedump',
+      namespace: 'urn:xmpp:jingle:apps:rtp:info:1',
+      element: 'state-dump',
+      fields: {
+        requestId: attribute('requestId')
+      }
+    });
+
     const ScreenStart = stanzaio.stanzas.define({
       name: 'screenstart',
       namespace: 'urn:xmpp:jingle:apps:rtp:info:1',
@@ -147,6 +156,7 @@ class JingleSessionManager extends WildEmitter {
     });
 
     stanzaio.stanzas.withDefinition('jingle', 'urn:xmpp:jingle:1', function (Jingle) {
+      stanzaio.stanzas.extend(Jingle, StateDump);
       stanzaio.stanzas.extend(Jingle, ScreenStart);
       stanzaio.stanzas.extend(Jingle, ScreenStop);
     });
@@ -234,7 +244,7 @@ class JingleSessionManager extends WildEmitter {
     });
 
     this.jingleJs.on('outgoing', session => {
-      return this.emit(events.OUTGOING_RTCSESSION_PROCEED, session);
+      return this.emit(events.OUTGOING_RTCSESSION, session);
     });
 
     this.jingleJs.on('incoming', session => {
@@ -550,9 +560,24 @@ class JingleSessionManager extends WildEmitter {
         delete this.pendingSessions[sessionId];
       }.bind(this),
 
-      notifyScreenShareStart: function (session) {
+      requestStateDump: function (session, requestId) {
         this.emit('send', {
           to: session.peerID,
+          from: this.jid.bare,
+          type: 'set',
+          jingle: {
+            action: 'session-info',
+            sid: session.sid,
+            statedump: {
+              requestId
+            }
+          }
+        });
+      }.bind(this),
+
+      notifyScreenShareStart: function (session) {
+        this.emit('send', {
+          to: `${session.peerID}/media-server`,
           from: this.jid.bare,
           type: 'set',
           jingle: {
@@ -565,7 +590,7 @@ class JingleSessionManager extends WildEmitter {
 
       notifyScreenShareStop: function (session) {
         this.emit('send', {
-          to: session.peerID,
+          to: `${session.peerID}/media-server`,
           from: this.jid.bare,
           type: 'set',
           jingle: {
