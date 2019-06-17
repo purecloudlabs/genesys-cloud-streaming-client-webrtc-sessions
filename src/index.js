@@ -577,7 +577,7 @@ class JingleSessionManager extends WildEmitter {
 
       notifyScreenShareStart: function (session) {
         this.emit('send', {
-          to: `${session.peerID}/media-server`,
+          to: `${session.peerID}`,
           from: this.jid.bare,
           type: 'set',
           jingle: {
@@ -590,7 +590,7 @@ class JingleSessionManager extends WildEmitter {
 
       notifyScreenShareStop: function (session) {
         this.emit('send', {
-          to: `${session.peerID}/media-server`,
+          to: `${session.peerID}`,
           from: this.jid.bare,
           type: 'set',
           jingle: {
