@@ -870,7 +870,7 @@ test('requestStateDump should emit statedump', t => {
   sessionManager.expose.requestStateDump(mediaSession, requestId);
 
   sessionManager.emit.firstCall.calledWith({
-    to: `${mediaSession.peerID}/media-server`,
+    to: `${mediaSession.peerID}`,
     from: sessionManager.jid.bare,
     jingle: {
       action: 'session-info',
@@ -894,7 +894,7 @@ test('notifyScreenShareStart should emit screenstart', t => {
   sessionManager.expose.notifyScreenShareStart(mediaSession);
 
   sessionManager.emit.firstCall.calledWith({
-    to: `${mediaSession.peerID}/media-server`,
+    to: `${mediaSession.peerID}`,
     from: sessionManager.jid.bare,
     jingle: {
       action: 'session-info',
@@ -916,7 +916,7 @@ test('notifyScreenShareStop should emit screenstop', t => {
   sessionManager.expose.notifyScreenShareStop(mediaSession);
 
   sessionManager.emit.firstCall.calledWith({
-    to: `${mediaSession.peerID}/media-server`,
+    to: `${mediaSession.peerID}`,
     from: sessionManager.jid.bare,
     jingle: {
       action: 'session-info',
