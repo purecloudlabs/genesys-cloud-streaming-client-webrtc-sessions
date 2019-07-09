@@ -119,6 +119,8 @@ class JingleSessionManager extends WildEmitter {
       fields: {
         audio: attribute('audio'),
         video: attribute('video'),
+        listener: attribute('listener'),
+        screenShare: attribute('screenShare'),
         screenRecording: attribute('screenRecording')
       }
     });
