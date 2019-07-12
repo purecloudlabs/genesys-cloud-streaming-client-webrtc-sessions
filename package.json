@@ -18,7 +18,8 @@
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix",
     "report": "nyc report && nyc check-coverage --lines 100 --functions 100 --branches 100 --statements 100",
-    "watch-tests": "watch 'npm test' src test"
+    "watch-tests": "watch 'npm test' src test",
+    "greenkeep": "npx npm-check --update"
   },
   "semistandard": {
     "ignore": [
@@ -80,7 +81,7 @@
     "jingle-purecloud": "^4.0.0",
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
-    "lru-cache": "^4.1.2",
+    "lru-cache": "^5.1.1",
     "stanza.io": "^9.1.0",
     "uuid": "^3.1.0",
     "wildemitter": "^1.2.0"
@@ -88,11 +89,11 @@
   "devDependencies": {
     "ava": "^0.25.0",
     "babel-core": "^6.25.0",
-    "babel-loader": "^7.1.1",
+    "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.1",
     "babel-preset-env": "^1.6.1",
     "browser-env": "^3.1.0",
-    "jxt": "^3.0.8",
+    "jxt": "^4.0.2",
     "jxt-xmpp": "^3.2.2",
     "jxt-xmpp-types": "^3.0.0",
     "nyc": "^13.0.0",
