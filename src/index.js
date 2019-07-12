@@ -85,7 +85,7 @@ MediaSession.prototype._log = function (level, message, details) {
   this.emit(`log:${level}`, msg, details);
 };
 
-class JingleSessionManager extends WildEmitter {
+export default class JingleSessionManager extends WildEmitter {
   constructor (client, clientOptions = {}) {
     super();
 
@@ -710,5 +710,3 @@ class JingleSessionManager extends WildEmitter {
     };
   }
 }
-
-module.exports = JingleSessionManager;
