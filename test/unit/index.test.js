@@ -4,7 +4,7 @@ const test = require('ava');
 const sinon = require('sinon');
 const jingleStanza = require('jingle-stanza');
 const WildEmitter = require('wildemitter');
-const XMPP = require('stanza.io');
+const XMPP = require('stanza');
 
 const {
   events

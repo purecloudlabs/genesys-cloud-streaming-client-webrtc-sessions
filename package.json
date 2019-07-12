@@ -18,7 +18,8 @@
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix",
     "report": "nyc report && nyc check-coverage --lines 100 --functions 100 --branches 100 --statements 100",
-    "watch-tests": "watch 'npm test' src test"
+    "watch-tests": "watch 'npm test' src test",
+    "greenkeep": "npx npm-check --update"
   },
   "semistandard": {
     "ignore": [
@@ -81,7 +82,7 @@
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
     "lru-cache": "^5.1.1",
-    "stanza.io": "^9.1.0",
+    "stanza": "^11.0.0",
     "uuid": "^3.1.0",
     "wildemitter": "^1.2.1"
   },
