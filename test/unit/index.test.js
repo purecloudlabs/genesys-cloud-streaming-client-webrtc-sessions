@@ -66,7 +66,6 @@ class MockClient {
 }
 
 test.beforeEach(() => {
-  global.window = global;
   global.window.RTCPeerConnection = global.RTCPeerConnection = MockRTCPeerConnection();
   global.window.MediaSession = global.MediaSession = MockMediaSession();
 });
