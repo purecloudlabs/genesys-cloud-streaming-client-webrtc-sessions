@@ -13,8 +13,9 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: minimize ? 'webrtc-sessions.min.js' : 'webrtc-sessions.js',
-      library: 'webrtc-sessions',
-      libraryTarget: 'umd'
+      library: 'PureCloudStreamingClientWebrtcSessions',
+      libraryTarget: 'umd',
+      libraryExport: 'default'
     },
     module: {
       rules: [
@@ -22,7 +23,7 @@ module.exports = (env) => {
           test: /\.js$/,
           loader: 'babel-loader',
           query: {
-            presets: ['env']
+            presets: ['@babel/preset-env']
           }
         }
       ]
