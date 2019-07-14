@@ -85,7 +85,7 @@ MediaSession.prototype._log = function (level, message, details) {
   this.emit(`log:${level}`, msg, details);
 };
 
-class JingleSessionManager extends WildEmitter {
+export default class JingleSessionManager extends WildEmitter {
   constructor (client, clientOptions = {}) {
     super();
 
@@ -195,7 +195,7 @@ class JingleSessionManager extends WildEmitter {
     this.pendingIqs = {};
 
     // can ignore up to 10 sessions for up to 6 hours
-    this.ignoredSessions = LRU({ max: 10, maxAge: 10 * 60 * 60 * 6 });
+    this.ignoredSessions = new LRU({ max: 10, maxAge: 10 * 60 * 60 * 6 });
 
     this.logger = client.logger;
 
@@ -710,5 +710,3 @@ class JingleSessionManager extends WildEmitter {
     };
   }
 }
-
-module.exports = JingleSessionManager;

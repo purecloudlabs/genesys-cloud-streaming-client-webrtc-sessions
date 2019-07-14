@@ -18,7 +18,8 @@
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix",
     "report": "nyc report && nyc check-coverage --lines 100 --functions 100 --branches 100 --statements 100",
-    "watch-tests": "watch 'npm test' src test"
+    "watch-tests": "watch 'npm test' src test",
+    "greenkeep": "npx npm-check --update"
   },
   "semistandard": {
     "ignore": [
@@ -30,7 +31,7 @@
   },
   "babel": {
     "presets": [
-      "env"
+      "@babel/preset-env"
     ],
     "env": {
       "test": {
@@ -41,20 +42,24 @@
     }
   },
   "ava": {
-    "files": [],
+    "files": [
+      "test/unit/*.js"
+    ],
     "concurrency": 5,
     "failFast": true,
     "failWithoutAssertions": false,
     "tap": false,
     "powerAssert": true,
     "require": [
-      "babel-register",
+      "esm",
+      "@babel/register",
       "./test/helpers/setup-browser-env.js"
     ]
   },
   "nyc": {
     "require": [
-      "babel-register"
+      "@babel/register",
+      "babel-polyfill"
     ],
     "sourceMap": false,
     "instrument": false
@@ -80,26 +85,29 @@
     "jingle-purecloud": "^4.0.0",
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
-    "lru-cache": "^4.1.2",
-    "stanza.io": "^9.1.0",
+    "lru-cache": "^5.1.1",
+    "stanza": "^11.3.6",
     "uuid": "^3.1.0",
-    "wildemitter": "^1.2.0"
+    "wildemitter": "^1.2.1"
   },
   "devDependencies": {
-    "ava": "^0.25.0",
-    "babel-core": "^6.25.0",
-    "babel-loader": "^7.1.1",
+    "@babel/core": "^7.5.4",
+    "@babel/preset-env": "^7.5.4",
+    "@babel/register": "^7.4.4",
+    "ava": "^2.2.0",
+    "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.1",
-    "babel-preset-env": "^1.6.1",
-    "browser-env": "^3.1.0",
-    "jxt": "^3.0.8",
+    "babel-polyfill": "^6.26.0",
+    "browser-env": "^3.2.6",
+    "esm": "^3.2.25",
+    "jxt": "^4.0.2",
     "jxt-xmpp": "^3.2.2",
     "jxt-xmpp-types": "^3.0.0",
-    "nyc": "^13.0.0",
+    "nyc": "^14.1.1",
     "semistandard": "^13.0.1",
-    "sinon": "^2.3.8",
+    "sinon": "^7.3.2",
     "watch": "^1.0.2",
-    "webpack": "^4.16.2",
-    "webpack-cli": "^3.1.0"
+    "webpack": "^4.35.3",
+    "webpack-cli": "^3.3.5"
   }
 }

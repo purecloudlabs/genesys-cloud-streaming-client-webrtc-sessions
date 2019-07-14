@@ -1,10 +1,12 @@
 'use strict';
 
+import { createClient } from 'stanza/browser-module';
+import SessionManager from '../../src/index';
+
 const test = require('ava');
 const sinon = require('sinon');
 const jingleStanza = require('jingle-stanza');
 const WildEmitter = require('wildemitter');
-const XMPP = require('stanza.io');
 
 const {
   events
@@ -23,8 +25,6 @@ const {
   MockRTCPeerConnection,
   MockMediaSession
 } = require('../utils');
-
-const SessionManager = require('../../src/index');
 
 const MOCK_JXT = {
   withDefinition (label, xmlns, fn) { fn(); },
@@ -66,7 +66,9 @@ class MockClient {
 }
 
 test.beforeEach(() => {
-  global.window = global;
+  try {
+    global.window = global;
+  } catch (e) {}
   global.window.RTCPeerConnection = global.RTCPeerConnection = MockRTCPeerConnection();
   global.window.MediaSession = global.MediaSession = MockMediaSession();
 });
@@ -80,7 +82,7 @@ const beforeEach = function () {
 
 /* custom stanza definitions */
 test('screenstart stanza should be defined properly', t => {
-  const stanzaio = XMPP.createClient();
+  const stanzaio = createClient();
   const client = new MockClient();
   client._stanzaio = stanzaio;
   const webrtcSessions = new SessionManager(client);
@@ -90,7 +92,7 @@ test('screenstart stanza should be defined properly', t => {
 });
 
 test('screenstop stanza should be defined properly', t => {
-  const stanzaio = XMPP.createClient();
+  const stanzaio = createClient();
   const client = new MockClient();
   client._stanzaio = stanzaio;
   const webrtcSessions = new SessionManager(client);
@@ -290,7 +292,7 @@ test.serial('prepareSession should wire up data channel events', async t => {
   await lastnEvent;
 });
 
-test('prepareSession should create a MediaDataSession when appropriate', t => {
+test('prepareSession should create a MediaDataSession when appropriate (rtp, datachannel)', t => {
   const { sessionManager } = beforeEach();
   sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
@@ -301,7 +303,7 @@ test('prepareSession should create a MediaDataSession when appropriate', t => {
   t.is(typeof mediaSession.getDataChannel, 'function');
 });
 
-test('prepareSession should create a MediaSession when appropriate', t => {
+test('prepareSession should not create a MediaSession when not appropriate (rtp)', t => {
   const { sessionManager } = beforeEach();
   sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
@@ -312,7 +314,7 @@ test('prepareSession should create a MediaSession when appropriate', t => {
   t.is(typeof mediaSession.getDataChannel, 'undefined');
 });
 
-test('prepareSession should create a MediaSession when appropriate', t => {
+test('prepareSession should not create a MediaSession when not appropriate (none)', t => {
   const { sessionManager } = beforeEach();
   sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
@@ -1221,7 +1223,7 @@ test('jingleMessageReject should return without emitting an event if it is from 
   sinon.assert.notCalled(sessionManager.emit);
 });
 
-test('jingleMessageReject should emit a handled event if it is from another client of the same user', t => {
+test('jingleMessageReject should emit a handled event if it is from another client of the same user (incoming)', t => {
   const { sessionManager } = beforeEach();
   const stanzaData = jingleMessageRejectStanza.toJSON();
   stanzaData.from = sessionManager.jid.bare;
@@ -1233,7 +1235,7 @@ test('jingleMessageReject should emit a handled event if it is from another clie
   t.is(typeof sessionManager.pendingSessions[stanzaData.reject.id], 'undefined');
 });
 
-test('jingleMessageReject should emit a handled event if it is from another client of the same user', t => {
+test('jingleMessageReject should emit a handled event if it is from another client of the same user (outgoing)', t => {
   const { sessionManager } = beforeEach();
   const stanzaData = jingleMessageRejectStanza.toJSON();
   sinon.stub(sessionManager, 'emit');
