@@ -8,6 +8,10 @@ const LRU = require('lru-cache');
 const Jingle = require('jingle-purecloud');
 const jingleMessage = require('jingle-stanza/stanzas/jingleMessage');
 
+declare var window: Window & {
+  RTCPeerConnection: any
+};
+
 const {
   events,
   labels,
@@ -86,7 +90,24 @@ MediaSession.prototype._log = function (level, message, details) {
 };
 
 export default class JingleSessionManager extends WildEmitter {
-  constructor (client, clientOptions = {}) {
+  config: {
+    iceTransportPolicy: any;
+    iceServers: any;
+    // all default to true
+    signalEndOfCandidates: boolean;
+    signalIceConnected: boolean;
+    rtcSessionSurvivability: boolean;
+    disableEOCShortCircuit: boolean;
+    allowIPv6: boolean;
+  };
+  jingleJs: any;
+  pendingSessions: {};
+  pendingIqs: {};
+  ignoredSessions: any;
+  logger: any;
+  client: any;
+  stanzaHandlers: { jingle: (stanza: any) => void; jingleMessageInit: (stanza: any, raw: any) => any; jingleMessageRetract: (stanza: any) => boolean; jingleMessageAccept: (stanza: any) => void; jingleMessageProceed: (stanza: any) => any; jingleMessageReject: (stanza: any) => void; };
+  constructor (client, clientOptions: any = {}) {
     super();
 
     const stanzaio = client._stanzaio;
@@ -210,11 +231,11 @@ export default class JingleSessionManager extends WildEmitter {
     this.client = client;
 
     client.on('connected', () => {
-      this.refreshIceServers();
+      this.refreshIceServers(); // tslint:disable-line
     });
 
     if (client.connected) {
-      this.refreshIceServers();
+      this.refreshIceServers(); // tslint:disable-line
     }
 
     this.setupStanzaHandlers();
@@ -297,7 +318,7 @@ export default class JingleSessionManager extends WildEmitter {
         const stunServers = responses[1].services.services;
         this.logger.debug('STUN/TURN server discovery result', { turnServers, stunServers });
         const iceServers = [...turnServers, ...stunServers].map(service => {
-          const ice = { type: service.type };
+          const ice: any = { type: service.type };
           const port = service.port ? `:${service.port}` : '';
           ice.urls = `${service.type}:${service.host}${port}`;
           if (['turn', 'turns'].includes(service.type)) {
@@ -411,7 +432,7 @@ export default class JingleSessionManager extends WildEmitter {
         };
         if (opts.stream) {
           for (let track of Array.from(opts.stream.getTracks())) {
-            session.propose.descriptions.push({ media: track.kind });
+            session.propose.descriptions.push({ media: track['kind'] });
           }
         }
 
@@ -422,7 +443,7 @@ export default class JingleSessionManager extends WildEmitter {
         if (opts.jid.match(/@conference/)) {
           let mediaDescriptions = session.propose.descriptions;
           if (mediaDescriptions.length === 0) {
-            mediaDescriptions = [ { media: 'listener' } ];
+            mediaDescriptions = [{ media: 'listener' }];
           }
 
           const Presence = this.client._stanzaio.stanzas.getPresence();
@@ -456,7 +477,7 @@ export default class JingleSessionManager extends WildEmitter {
         return session.propose.id;
       }.bind(this),
 
-      endRtcSessions: function (opts, reason = 'success', callback = () => {}) {
+      endRtcSessions: function (opts, reason: any = 'success', callback = (...args: any[]) => { }) {
         if (typeof opts === 'function') {
           callback = opts;
           opts = { jid: null };

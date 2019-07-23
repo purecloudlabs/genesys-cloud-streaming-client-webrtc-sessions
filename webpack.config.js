@@ -17,6 +17,9 @@ module.exports = (env) => {
       libraryTarget: 'umd',
       libraryExport: 'default'
     },
+    resolve: {
+      extensions: ['.ts', '.js', '.json']
+    },
     module: {
       rules: [
         {
@@ -25,6 +28,11 @@ module.exports = (env) => {
           query: {
             presets: ['@babel/preset-env']
           }
+        },
+        {
+          test: /\.ts$/,
+          exclude: /(node_modules|bower_components)/,
+          loader: 'awesome-typescript-loader'
         }
       ]
     }
