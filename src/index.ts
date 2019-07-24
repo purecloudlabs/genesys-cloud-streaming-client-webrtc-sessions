@@ -1,12 +1,11 @@
-'use strict';
-
-const MediaDataSession = require('jingle-media-data-session-purecloud');
-const MediaSession = require('jingle-media-session-purecloud');
-const uuid = require('uuid');
-const WildEmitter = require('wildemitter');
-const LRU = require('lru-cache');
-const Jingle = require('jingle-purecloud');
-const jingleMessage = require('jingle-stanza/stanzas/jingleMessage');
+import MediaDataSession from 'jingle-media-data-session-purecloud';
+import MediaSession from 'jingle-media-session-purecloud';
+import uuid from 'uuid';
+import WildEmitter from 'wildemitter';
+import LRU from 'lru-cache';
+import Jingle from 'jingle-purecloud';
+import jingleMessage from 'jingle-stanza/stanzas/jingleMessage';
+import constants from './constants';
 
 declare var window: Window & {
   RTCPeerConnection: any
@@ -16,7 +15,7 @@ const {
   events,
   labels,
   jingleEvents
-} = require('../constants');
+} = constants;
 
 const CAPABILITIES = [
   'urn:xmpp:jingle:apps:rtp:1',
@@ -106,7 +105,8 @@ export default class JingleSessionManager extends WildEmitter {
   ignoredSessions: any;
   logger: any;
   client: any;
-  stanzaHandlers: { jingle: (stanza: any) => void; jingleMessageInit: (stanza: any, raw: any) => any; jingleMessageRetract: (stanza: any) => boolean; jingleMessageAccept: (stanza: any) => void; jingleMessageProceed: (stanza: any) => any; jingleMessageReject: (stanza: any) => void; };
+  stanzaHandlers: { jingle: (stanza: any) => void; jingleMessageInit: (stanza: any, raw?: any) => any; jingleMessageRetract: (stanza: any) => boolean; jingleMessageAccept: (stanza: any) => void; jingleMessageProceed: (stanza: any) => any; jingleMessageReject: (stanza: any) => void; };
+
   constructor (client, clientOptions: any = {}) {
     super();
 
@@ -304,7 +304,7 @@ export default class JingleSessionManager extends WildEmitter {
     // no-op - we register for iq's with stanzaEvents
   }
 
-  handleMessage () {
+  handleMessage (a: any) {
     // no-op - we do a custom handler
   }
 

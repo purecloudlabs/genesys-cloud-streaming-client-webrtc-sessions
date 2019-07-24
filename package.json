@@ -1,11 +1,8 @@
 {
   "name": "purecloud-streaming-client-webrtc-sessions",
-  "version": "7.2.10",
+  "version": "8.0.0",
   "description": "WebRTC Extensions for the PureCloud Streaming Client SDK",
   "main": "dist/webrtc-sessions.js",
-  "pre-push": [
-    "test"
-  ],
   "files": [
     "src",
     "dist/webrtc-sessions.js",
@@ -13,61 +10,23 @@
   ],
   "scripts": {
     "build": "webpack && webpack --env.production",
-    "unit-test": "NODE_ENV=test nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
-    "test": "semistandard && npm run unit-test && npm run report",
-
-    "test:jest": "NODE_ENV=test npm run lint && jest --runInBand",
-    "test:watch": "jest --watch --collectCoverage=false --runInBand",
+    "test": "NODE_ENV=test npm run lint && jest --runInBand",
+    "test:watch": "NODE_ENV=test jest --watch --collectCoverage=false --runInBand",
     "lint": "npm run semistandard && npm run tslint",
     "tslint": "tslint --project . --config tslint.json",
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix",
-    "report": "nyc report && nyc check-coverage --lines 100 --functions 100 --branches 100 --statements 100",
-    "watch-tests": "watch 'npm test' src test",
     "greenkeep": "npx npm-check --update"
   },
+  "pre-push": [
+    "test"
+  ],
   "semistandard": {
     "ignore": [
-      "/.nyc_output",
       "/coverage",
       "/scripts",
       "/dist"
     ]
-  },
-  "babel": {
-    "presets": [
-      "@babel/preset-env"
-    ],
-    "env": {
-      "test": {
-        "plugins": [
-          "istanbul"
-        ]
-      }
-    }
-  },
-  "ava": {
-    "files": [
-      "test/unit/*.js"
-    ],
-    "concurrency": 5,
-    "failFast": true,
-    "failWithoutAssertions": false,
-    "tap": false,
-    "powerAssert": true,
-    "require": [
-      "esm",
-      "@babel/register",
-      "./test/helpers/setup-browser-env.js"
-    ]
-  },
-  "nyc": {
-    "require": [
-      "@babel/register",
-      "babel-polyfill"
-    ],
-    "sourceMap": false,
-    "instrument": false
   },
   "repository": {
     "type": "git",
@@ -96,12 +55,12 @@
     "wildemitter": "^1.2.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.5.4",
-    "@babel/preset-env": "^7.5.4",
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
     "@babel/register": "^7.4.4",
     "@types/jest": "^24.0.15",
-    "ava": "^2.2.0",
     "awesome-typescript-loader": "^5.2.1",
+    "babel-jest": "^24.8.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.1",
     "babel-polyfill": "^6.26.0",
@@ -111,7 +70,6 @@
     "jxt": "^4.0.2",
     "jxt-xmpp": "^3.2.2",
     "jxt-xmpp-types": "^3.0.0",
-    "nyc": "^14.1.1",
     "semistandard": "^13.0.1",
     "sinon": "^7.3.2",
     "ts-jest": "^24.0.2",

@@ -1,21 +1,27 @@
+const esModules = ['stanza'].join('|');
+
 module.exports = {
   roots: [
     '<rootDir>/src',
-    '<rootDir>/test'
+    '<rootDir>/test',
+    '<rootDir>/node_modules'
   ],
   testMatch: [
-    '<rootDir>/test/unit/**/*.(ts|js)'
+    '<rootDir>/test/unit/**/index*.(ts|js)'
   ],
   transform: {
-    '^.+\\.jsx?$': 'babel-jest',
-    '^.+\\.tsx?$': 'ts-jest'
+    '^.+\\.js?$': 'babel-jest',
+    '^.+\\.ts?$': 'ts-jest'
   },
+  transformIgnorePatterns: [
+    `/node_modules/(?!${esModules}).+\\.js$`
+  ],
   setupFilesAfterEnv: [
-    '<rootDir>/test/helpers/setup-browser-env.js'
+    '<rootDir>/test/helpers/setup-browser-env.ts'
   ],
   collectCoverage: true,
   collectCoverageFrom: [
-    '<rootDir>/src/**/*.{js,jsx,ts,tsx}',
+    '<rootDir>/src/**/*.{js,ts}',
     '!**/node_modules/**',
     '!**/types/**'
   ],
@@ -28,7 +34,10 @@ module.exports = {
     }
   },
   coverageReporters: [
-    'lcov', 'text', 'text-summary', 'cobertura'
+    'lcov',
+    'text',
+    'text-summary',
+    'cobertura'
   ],
   coverageDirectory: './coverage'
 };

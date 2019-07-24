@@ -4,7 +4,7 @@ module.exports = (env) => {
   const minimize = env && env.production;
   return {
     target: 'node',
-    entry: './src/index.js',
+    entry: './src/index.ts',
     devtool: 'source-map',
     mode: minimize ? 'production' : 'development',
     optimization: {

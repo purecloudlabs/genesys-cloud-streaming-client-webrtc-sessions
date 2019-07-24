@@ -1,6 +1,4 @@
-'use strict';
-
-const constants = {
+export default {
   events: {
     REQUEST_WEBRTC_DUMP: 'requestWebrtcDump', // dump triggered by someone in room
 
@@ -43,5 +41,3 @@ const constants = {
     JINGLE_MESSAGE: 'urn:xmpp:jingle-message:0'
   }
 };
-
-module.exports = constants;

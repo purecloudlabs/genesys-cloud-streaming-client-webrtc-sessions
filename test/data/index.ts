@@ -1,8 +1,6 @@
-'use strict';
+import jingleStanza from 'jingle-stanza';
 
-const jingleStanza = require('jingle-stanza');
-
-module.exports = {
+export default {
   jingleActionStanza: jingleStanza.getXml(
     {
       'jingle': {
