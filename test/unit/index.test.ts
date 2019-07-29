@@ -84,7 +84,7 @@ describe('JingleSessionManager', () => {
 
   const _beforeEach = function () {
     const client = new MockClient('theOneJidToRuleThemAll12345');
-    const sessionManager = new SessionManager(client);
+    const sessionManager = new SessionManager(client as any);
     return { stanzaio: client._stanzaio, sessionManager };
   };
 
@@ -93,7 +93,7 @@ describe('JingleSessionManager', () => {
     const stanzaio = createClient();
     const client = new MockClient();
     client._stanzaio = stanzaio;
-    const webrtcSessions = new SessionManager(client);
+    const webrtcSessions = new SessionManager(client as any);
     const IQ = webrtcSessions.client._stanzaio.stanzas.getIQ();
     const iq = new IQ({ to: 'test', from: 'test', jingle: { sid: 'test', action: 'session-info', screenstart: {} } });
     expect(iq.toString().indexOf('screen-start')).toBeTruthy();
@@ -103,7 +103,7 @@ describe('JingleSessionManager', () => {
     const stanzaio = createClient();
     const client = new MockClient();
     client._stanzaio = stanzaio;
-    const webrtcSessions = new SessionManager(client);
+    const webrtcSessions = new SessionManager(client as any);
     const IQ = webrtcSessions.client._stanzaio.stanzas.getIQ();
     const iq = new IQ({ to: 'test', from: 'test', jingle: { sid: 'test', action: 'session-info', screenstop: {} } });
     expect(iq.toString().indexOf('screen-stop')).toBeTruthy();
@@ -119,7 +119,7 @@ describe('JingleSessionManager', () => {
     const clientOptions = {
       iceServers: []
     };
-    const sessionManager = new SessionManager({ _stanzaio: stanzaio, on () { } }, clientOptions);
+    const sessionManager = new SessionManager({ _stanzaio: stanzaio, on () { } } as any, clientOptions);
     expect(sessionManager).toBeTruthy();
   });
 
@@ -130,7 +130,7 @@ describe('JingleSessionManager', () => {
       rtcSessionSurvivability: true
     };
     jest.spyOn(client._stanzaio, 'on');
-    const sessionManager = new SessionManager(client, clientOptions);
+    const sessionManager = new SessionManager(client as any, clientOptions);
 
     jest.spyOn(sessionManager.jingleJs, 'endAllSessions');
     sessionManager.pendingIqs = { foo: 'bar' };
@@ -151,7 +151,7 @@ describe('JingleSessionManager', () => {
       rtcSessionSurvivability: false
     };
     jest.spyOn(client._stanzaio, 'on');
-    const sessionManager = new SessionManager(client, clientOptions);
+    const sessionManager = new SessionManager(client as any, clientOptions);
 
     jest.spyOn(sessionManager.jingleJs, 'endAllSessions');
     sessionManager.pendingIqs = { foo: 'bar' };
@@ -172,7 +172,7 @@ describe('JingleSessionManager', () => {
       iceServers: []
     };
     jest.spyOn(client._stanzaio.disco, 'addFeature');
-    const sessionManager = new SessionManager(client, clientOptions);
+    const sessionManager = new SessionManager(client as any, clientOptions);
     expect(sessionManager).toBeTruthy();
     expect(client._stanzaio.disco.addFeature).toHaveBeenCalledTimes(1); // only once, otherwise, lots of times
   });
@@ -182,7 +182,7 @@ describe('JingleSessionManager', () => {
     const clientOptions = {
       iceServers: []
     };
-    const sessionManager = new SessionManager(client, clientOptions);
+    const sessionManager = new SessionManager(client as any, clientOptions);
     expect(sessionManager.stanzaEvents).toEqual(['iq:set:jingle', 'iq:get:jingle']);
   });
 
@@ -193,7 +193,7 @@ describe('JingleSessionManager', () => {
     const clientOptions = {
       iceServers: []
     };
-    const sessionManager = new SessionManager(client, clientOptions);
+    const sessionManager = new SessionManager(client as any, clientOptions);
 
     const mockError = '<error reason="invalid"/>';
     sessionManager.on(events.RTCSESSION_ERROR, e => expect(e).toBe(mockError));
@@ -1002,7 +1002,7 @@ describe('JingleSessionManager', () => {
         return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockTurnServers } });
       }
     });
-    const sessionManager = new SessionManager(client);
+    const sessionManager = new SessionManager(client as any);
     expect(sessionManager.client._stanzaio.getServices).toHaveBeenCalledTimes(2);
     await new Promise(resolve => setTimeout(resolve, 10));
     expect(sessionManager.jingleJs.iceServers.find(s => s.type === 'turn')).toEqual({
