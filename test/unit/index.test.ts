@@ -76,7 +76,7 @@ describe('JingleSessionManager', () => {
     } catch (e) { }
     Object.defineProperties(global.window, {
       RTCPeerConnection: { value: MockRTCPeerConnection(), writable: true, configurable: true },
-      MediaSession: { value: MockMediaSession(), writable: true, configurable: true },
+      MediaSession: { value: MockMediaSession(), writable: true, configurable: true }
     });
     Object.defineProperty(global, 'RTCPeerConnection', { value: MockRTCPeerConnection(), writable: true, configurable: true });
     Object.defineProperty(global, 'MediaSession', { value: MockMediaSession(), writable: true, configurable: true });
@@ -1039,7 +1039,7 @@ describe('JingleSessionManager', () => {
   test('on and off hook up to the session manager directly', () => {
     expect.assertions(1);
     const { sessionManager } = _beforeEach();
-    const handler = () => { expect(true).toBe(true) };
+    const handler = () => { expect(true).toBe(true); };
     sessionManager.expose.on('someEvent', handler);
     sessionManager.emit('someEvent');
     sessionManager.expose.off('someEvent', handler);

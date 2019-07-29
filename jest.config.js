@@ -7,7 +7,7 @@ module.exports = {
     '<rootDir>/node_modules'
   ],
   testMatch: [
-    '<rootDir>/test/unit/**/index*.(ts|js)'
+    '<rootDir>/test/unit/**/*.(ts|js)'
   ],
   transform: {
     '^.+\\.js?$': 'babel-jest',

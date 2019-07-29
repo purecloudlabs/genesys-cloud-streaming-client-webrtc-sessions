@@ -1,5 +1,5 @@
 import MediaDataSession from 'jingle-media-data-session-purecloud';
-import MediaSession from 'jingle-media-session-purecloud';
+import MediaSession, { PCMediaSessionConstructOptions } from 'jingle-media-session-purecloud';
 import uuid from 'uuid';
 import WildEmitter from 'wildemitter';
 import LRU from 'lru-cache';
@@ -8,7 +8,7 @@ import jingleMessage from 'jingle-stanza/stanzas/jingleMessage';
 import constants from './constants';
 
 declare var window: Window & {
-  RTCPeerConnection: any
+  RTCPeerConnection: unknown
 };
 
 const {
@@ -39,14 +39,14 @@ const STANZA_EVENTS = [
   'iq:get:jingle'
 ];
 
-function prepareSession (options) {
+function prepareSession (options: PCMediaSessionConstructOptions): MediaSession {
   if (options.peerID.toString().indexOf('@conference') > -1) {
     const session = new MediaSession(options);
 
     // set up the last-n datachannel
-    session.on('addChannel', function (channel) {
+    session.on('addChannel', function (channel: RTCDataChannel) {
       session.lastNChannel = channel;
-      channel.onmessage = function (message) {
+      channel.onmessage = function (message?: { data?: any }) {
         if (message && message.data) {
           return session.emit(events.LASTN_CHANGE, JSON.parse(message.data));
         }
@@ -82,7 +82,7 @@ MediaSession.prototype.onIceCandidate = function (opts, e) {
   existingOnIceCandidate.call(this, ...arguments);
 };
 
-MediaSession.prototype._log = function (level, message, details) {
+MediaSession.prototype._log = function (level: string, message: string, details?: any) {
   // for backward compatibility, but also logging details
   const msg = `${this.sid}: ${message}`;
   this.emit(`log:${level}`, msg, details);
@@ -105,9 +105,9 @@ export default class JingleSessionManager extends WildEmitter {
   ignoredSessions: any;
   logger: any;
   client: any;
-  stanzaHandlers: { jingle: (stanza: any) => void; jingleMessageInit: (stanza: any, raw?: any) => any; jingleMessageRetract: (stanza: any) => boolean; jingleMessageAccept: (stanza: any) => void; jingleMessageProceed: (stanza: any) => any; jingleMessageReject: (stanza: any) => void; };
+  stanzaHandlers: StanzaHandlers;
 
-  constructor (client, clientOptions: any = {}) {
+  constructor (client: TempClient, clientOptions: any = {}) {
     super();
 
     const stanzaio = client._stanzaio;
