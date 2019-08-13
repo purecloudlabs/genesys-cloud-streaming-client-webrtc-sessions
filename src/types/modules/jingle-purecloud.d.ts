@@ -1,15 +1,12 @@
+
 declare module 'jingle-purecloud' {
   import WildEmitter from 'wildemitter';
-  import MediaSession, { PCMediaSessionConstructOptions } from 'jingle-media-session-purecloud';
+  import MediaSession, { MediaSessionOptions } from 'jingle-media-session-purecloud';
+  import MediaFileTransferSession from 'jingle-filetransfer-session-purecloud';
+  import PeerConnection from 'rtcpeerconnection';
+  import BaseSession from 'jingle-session';
 
-  interface Req {
-    jingle: {
-      sid: string;
-      contents: string[]; // TODO: this may be duplicated
-    }
-  }
-
-  interface PCSessionManagerConfig {
+  interface SessionManagerConfig {
     debug: boolean;
     peerConnectionConfig: {
       iceServers: RTCIceServer[];
@@ -27,46 +24,45 @@ declare module 'jingle-purecloud' {
     [key: string]: any;
   }
 
-  interface PCSessionManagerConstructOptions {
-    jid?: string | { full: string }; // TODO: type this better
+  interface SessionManagerConstructOpts {
+    jid?: string;
     selfID?: string;
     applcationTypes?: 'rtp' | 'filetransfer' | string;
-    prepareSession?: (options: PCMediaSessionConstructOptions) => MediaSession;
+    prepareSession?: (options: MediaSessionOptions) => BaseSession;
     iceServers?: RTCIceServer[];
     iceTransportPolicy?: RTCIceTransportPolicy;
     disableEOCShortCircuit?: boolean;
     signalIceConnected?: any;
-    performTieBreak?: (session: MediaSession, req: Req) => boolean;
+    performTieBreak?: (session: BaseSession, jingle: Jingle) => boolean;
   }
 
   export default class SessionManager extends WildEmitter {
     jid: string;
     selfID: string;
     sessions: {
-      [key: string]: MediaSession;
+      [key: string]: BaseSession;
     }; // TODO: type this
     peers: {
-      [key: string]: MediaSession[]; // TODO: type this
+      [key: string]: PeerConnection[];
     }; // TODO: type this
     prepareSession: MediaSession;
-    performTieBreak: (session: MediaSession, req: Req) => boolean;
+    performTieBreak: (session: MediaSession, jingle: Jingle) => boolean;
     screenSharingSupport: any; // TODO: type this -> webrtc.screenSharing
     capabilities: string[];
-    config: PCSessionManagerConfig;
+    config: SessionManagerConfig;
     iceServers: RTCIceServer[];
 
-
-    constructor (conf: PCSessionManagerConstructOptions);
+    constructor (config: SessionManagerConstructOpts);
     addICEServer (server: RTCIceServer | string): void;
     addSession (session: MediaSession): MediaSession;
-    createMediaSession (peer: MediaSession, sid: string, stream: MediaStream): MediaSession; // TODO: make sure peer is correct
-    createFileTransferSession (peer: MediaSession, sid: string): MediaSession;
-    endPeerSessions (peer: MediaSession, reason?: string, silent?: boolean): void;
+    createMediaSession (peer: PeerConnection, sid: string, stream: MediaStream): MediaFileTransferSession;
+    createFileTransferSession (peer: PeerConnection, sid: string): MediaSession;
+    endPeerSessions (peer: PeerConnection, reason?: string, silent?: boolean): void;
     endAllSessions (reason?: string, silent?: boolean): void;
-    _createIncomingSession (meta: any, req: Req): MediaSession; // TODO: what are these params?
+    _createIncomingSession (meta: any, jingle: Jingle): BaseSession; // TODO: what are these params?
     _sendError (to: string, id: string, data: any): void;
     _log (level: string, message: string): void;
-    process (req: Req): void;
+    process (jingle: Jingle): void;
 
 
   }

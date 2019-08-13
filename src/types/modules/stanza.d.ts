@@ -1,4 +1,3 @@
-
 declare module 'jingle-stanza/stanzas/jingleMessage' {
   export default function jingleMessage (stanza: Stanza): void;
 }

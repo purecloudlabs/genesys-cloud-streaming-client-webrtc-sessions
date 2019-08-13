@@ -18,10 +18,15 @@ declare module 'rtcpeerconnection' {
     andyetFirefoxMakesMeSad: number;
   }
 
-  interface Update {
-    contents?: any;
-    jingle?: Jingle;
-    candidate?: RTCIceCandidateInit;
+  export interface PeerConnectionConfig {
+    debug: boolean;
+    sid: string;
+    isInitiator: boolean;
+    sdpSessionID: Date;
+    useJingle: boolean;
+    bundlePolicy?: string | 'max-bundle';
+    rtcpMuxPolicy?: string | 'required';
+    [key: string]: any;
   }
 
   export default class PeerConnection extends WildEmitter {
@@ -36,18 +41,10 @@ declare module 'rtcpeerconnection' {
     wtFirefox: number;
     firefoxcandidatebuffer: RTCIceCandidateInit[];
     pc: RTCPeerConnection;
+    isInitiator: boolean;
     localDescription: Jingle;
     remoteDescription: Jingle;
-    config: {
-      debug: boolean;
-      sid: string;
-      isInitiator: boolean;
-      sdpSessionID: Date;
-      useJingle: boolean;
-      bundlePolicy?: string | 'max-bundle';
-      rtcpMuxPolicy?: string | 'required';
-      [key: string]: any;
-    };
+    config: PeerConnectionConfig & RTCConfig;
     iceCredentials: {
       local: any;
       remote: any;
@@ -58,15 +55,15 @@ declare module 'rtcpeerconnection' {
     hadRemoteRelayCandidate: boolean;
     hadLocalIPv6Candidate: boolean;
     hadRemoteIPv6Candidate: boolean;
-    _remoteDataChannels: RTCDataChannel[];
-    _localDataChannels: RTCDataChannel[];
-    _candidateBuffer: any[];
     localStream: MediaStream;
+    private _remoteDataChannels: RTCDataChannel[];
+    private _localDataChannels: RTCDataChannel[];
+    private _candidateBuffer: any[];
 
     readonly signalingState: RTCSignalingState;
     readonly iceConnectionState: RTCIceConnectionState;
 
-    constructor (config: any, constraints: any);
+    constructor (config: PeerConnectionConfig, constraints: RTCConstraints);
     getLocalStreams (): MediaStream[];
     getRoles (): RTCRtpSender[];
     getRemoteStreams (): MediaStream[];
@@ -74,7 +71,7 @@ declare module 'rtcpeerconnection' {
     addStream (stream: MediaStream): void;
     removeStream (stream: MediaStream): void;
     removeTrack (track: MediaStreamTrack): void;
-    processIce (update: Update, cb?: (() => void)): void;
+    processIce (update: JingleUpdate, cb?: (() => void)): void;
     offer (constraints: RTCOfferOptions, cb?: ((err?: string | null, expendedOffer?: JingleAnswerOffer) => void)): void;
     handleOffer (offer: JingleAnswerOffer, cb?: (() => void)): void;
     answerAudioOnly (cd?: ((err?: any | null, response?: JingleAnswerOffer) => void)): void;
@@ -85,18 +82,19 @@ declare module 'rtcpeerconnection' {
     getStats (selectorOrCallback?: MediaStreamTrack | ((err?: any, response?: RTCStatsReport) => void)): Promise<RTCStatsReport> | void;
     close (): void;
 
-    on (name: 'removeStream', event: MediaStreamEvent): void;
-    on (name: 'removeTrack', event: MediaStreamTrackEvent): void;
-    on (name: 'addStream', event: MediaStreamEvent): void;
-    on (name: 'negotiationNeeded', event: Event): void;
-    on (name: 'iceConnectionStateChange', event: Event): void;
-    on (name: 'signalingStateChange', event: Event): void;
-    on (name: 'offer', event: JingleAnswerOffer): void;
-    on (name: 'answer', event: JingleAnswerOffer): void;
-    on (name: 'ice', event: Jingle): void;
+    on (name: 'removeStream', callback: (event: MediaStreamEvent) => void): void;
+    on (name: 'removeTrack', callback: (event: MediaStreamTrackEvent) => void): void;
+    on (name: 'addStream', callback: (event: MediaStreamEvent) => void): void;
+    on (name: 'addTrack', callback: (event: RTCTrackEvent) => void): void;
+    on (name: 'negotiationNeeded', callback: (event: Event) => void): void;
+    on (name: 'iceConnectionStateChange', callback: (event: Event) => void): void;
+    on (name: 'signalingStateChange', callback: (event: Event) => void): void;
+    on (name: 'offer', callback: (event: JingleAnswerOffer) => void): void;
+    on (name: 'answer', callback: (event: JingleAnswerOffer) => void): void;
+    on (name: 'ice', callback: (event: Jingle) => void): void;
     on (name: 'endOfCandidates'): void;
-    on (name: 'addChannel', channel: RTCDataChannel): void;
-    on (name: 'error', err?: any): void;
+    on (name: 'addChannel', callback: (event: RTCDataChannel) => void): void;
+    on (name: 'error', callback: (err?: any) => void): void;
     on (name: 'close'): void;
     on (name: string, ...args: any[]): void;
 

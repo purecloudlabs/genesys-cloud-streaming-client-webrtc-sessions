@@ -1,14 +1,15 @@
 import MediaDataSession from 'jingle-media-data-session-purecloud';
-import MediaSession, { PCMediaSessionConstructOptions } from 'jingle-media-session-purecloud';
+import MediaSession, { MediaSessionOptions } from 'jingle-media-session-purecloud';
 import uuid from 'uuid';
 import WildEmitter from 'wildemitter';
 import LRU from 'lru-cache';
 import Jingle from 'jingle-purecloud';
 import jingleMessage from 'jingle-stanza/stanzas/jingleMessage';
 import constants from './constants';
+import PeerConnection from 'rtcpeerconnection';
 
 declare var window: Window & {
-  RTCPeerConnection: unknown
+  RTCPeerConnection: PeerConnection;
 };
 
 const {
@@ -39,7 +40,7 @@ const STANZA_EVENTS = [
   'iq:get:jingle'
 ];
 
-function prepareSession (options: PCMediaSessionConstructOptions): MediaSession {
+function prepareSession (options: MediaSessionOptions): MediaSession {
   if (options.peerID.toString().indexOf('@conference') > -1) {
     const session = new MediaSession(options);
 
@@ -79,7 +80,8 @@ MediaSession.prototype.onIceCandidate = function (opts, e) {
   if (e.candidate) {
     this._log('debug', 'Processing ice candidate', e.candidate.candidate);
   }
-  existingOnIceCandidate.call(this, ...arguments);
+  existingOnIceCandidate.call(this, opts, e);
+  // existingOnIceCandidate.call(this, ...arguments); // Was this really neccessary?
 };
 
 MediaSession.prototype._log = function (level: string, message: string, details?: any) {
@@ -107,7 +109,7 @@ export default class JingleSessionManager extends WildEmitter {
   client: any;
   stanzaHandlers: StanzaHandlers;
 
-  constructor (client: TempClient, clientOptions: any = {}) {
+  constructor (client: TempStreamingClient, clientOptions: any = {}) {
     super();
 
     const stanzaio = client._stanzaio;

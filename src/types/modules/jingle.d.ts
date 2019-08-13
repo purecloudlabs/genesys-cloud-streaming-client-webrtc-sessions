@@ -7,21 +7,34 @@ interface Jingle {
   sid?: string;
   sdp?: string;
   name?: string;
-  contents: JingleContent[];
+  action?: string;
+  initiator?: boolean;
+  responder?: string;
+  reason?: string;
+  contents?: JingleContent[];
+  candidate?: RTCIceCandidateInit;
 }
 
 interface JingleAnswerOffer {
   type: 'offer' | 'answer';
-  sdp: string;
   jingle: Jingle;
+  sdp?: string;
 }
 
-interface JingleContent {
-  name: 'video' | string;
-  creator?: string;
-  senders?: JingleSenders;
-  transport?: JingleTransport;
-  application?: JingleApplication;
+// interface JingleChanges {
+//   sid?: string;
+//   action?: string;
+//   initiator?: boolean;
+//   responder?: string;
+//   reason?: string;
+//   contents?: JingleApplication[]
+// }
+
+
+interface JingleUpdate {
+  contents?: any;
+  jingle?: Jingle;
+  candidate?: RTCIceCandidateInit;
 }
 
 interface JingleTransport {
@@ -46,13 +59,22 @@ interface JingleIceCandidate extends RTCIceCandidate {
   id?: string;
 }
 
+interface JingleContent {
+  name: 'video' | string;
+  creator?: string;
+  senders?: JingleSenders;
+  transport?: JingleTransport;
+  application?: JingleApplication;
+}
+
 interface JingleApplication {
   applicationType?: JingleApplicationType;
-  media?: string;
+  media?: 'audio' | 'video' | string;
   googConferenceFlag?: boolean;
   mux?: boolean;
   rsize?: boolean;
   feedback?: JingleFeedback[];
+  offer?: { hash?: { alog: string } }
   headerExtensions?: {
     id: string;
     senders: JingleSenders;
@@ -69,7 +91,7 @@ interface JingleApplication {
     name: string;
     clockrate?: string;
     channels?: string;
-    parameters: KeyValue<string>[];
+    parameters: { [key: string]: string }[];
     feedback: JingleFeedback[];
   }[];
   bandwidth?: {
@@ -93,5 +115,5 @@ interface JingleFeedback {
 
 interface JingleSource {
   ssrc: string;
-  parameters?: KeyValue<string | number>[];
+  parameters?: { [key: string]: string | number }[];
 }
