@@ -417,6 +417,11 @@ export default class JingleSessionManager extends WildEmitter {
 
         if (opts.mediaPurpose) {
           session.propose.descriptions.push({ media: opts.mediaPurpose });
+
+          if (opts.mediaPurpose.toLowerCase() === 'screenshare') {
+            session.propose.descriptions.push({ media: 'audio' });
+          }
+
         }
 
         if (opts.jid.match(/@conference/)) {
