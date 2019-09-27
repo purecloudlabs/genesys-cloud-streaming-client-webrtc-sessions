@@ -78,6 +78,9 @@
   ],
   "author": "Xander Dumaine",
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "homepage": "https://github.com/purecloudlabs/purecloud-streaming-client-webrtc-sessions#readme",
   "dependencies": {
     "jingle-media-data-session-purecloud": "^3.0.0",
