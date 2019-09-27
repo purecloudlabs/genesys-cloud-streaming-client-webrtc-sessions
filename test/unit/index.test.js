@@ -976,6 +976,51 @@ test('refreshIceServers will call getServices on stanzaio and setIceServers with
   });
 });
 
+test('refreshIceServers will call itself again on failure', async t => {
+  const { sessionManager, sandbox } = beforeEach();
+  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
+    if (type === 'stun') {
+      return Promise.reject(new Error('Expected test error'));
+    }
+    if (type === 'turn') {
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockTurnServers } });
+    }
+  });
+  sandbox.stub(sessionManager.expose, 'setIceServers');
+  const spy = sinon.spy(sessionManager, 'refreshIceServers');
+
+  try {
+    await sessionManager.expose.refreshIceServers();
+  } catch (err) {
+    // expected throw, don't do anything
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 6000));
+  sinon.assert.calledTwice(spy);
+});
+
+test('refreshIceServers will reject with an error on failure', async t => {
+  const { sessionManager, sandbox } = beforeEach();
+  const expectedError = new Error('Expected test error');
+  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
+    if (type === 'stun') {
+      return Promise.reject(expectedError);
+    }
+    if (type === 'turn') {
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockTurnServers } });
+    }
+  });
+  sandbox.stub(sessionManager.expose, 'setIceServers');
+
+  try {
+    await sessionManager.expose.refreshIceServers();
+  } catch (err) {
+    t.deepEqual(err, expectedError);
+  }
+});
+
 test('constructor will call refreshIceServers immediately if the client is connected', async t => {
   const { sandbox } = beforeEach();
   const client = new MockClient('somejid@example.com');

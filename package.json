@@ -94,7 +94,7 @@
     "@babel/core": "^7.5.4",
     "@babel/preset-env": "^7.5.4",
     "@babel/register": "^7.4.4",
-    "ava": "^2.2.0",
+    "ava": "^2.4.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.1",
     "babel-polyfill": "^6.26.0",
@@ -105,7 +105,7 @@
     "jxt-xmpp-types": "^3.0.0",
     "nyc": "^14.1.1",
     "semistandard": "^13.0.1",
-    "sinon": "^7.3.2",
+    "sinon": "^7.5.0",
     "watch": "^1.0.2",
     "webpack": "^4.35.3",
     "webpack-cli": "^3.3.5"
