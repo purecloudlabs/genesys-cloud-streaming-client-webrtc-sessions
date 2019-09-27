@@ -291,6 +291,7 @@ export default class JingleSessionManager extends WildEmitter {
     const getServices = (type) => this.client._stanzaio.getServices(this.client._stanzaio.jid.domain, type);
     const turn = getServices('turn');
     const stun = getServices('stun');
+
     return Promise.all([turn, stun])
       .then((responses) => {
         const turnServers = responses[0].services.services;
@@ -315,6 +316,14 @@ export default class JingleSessionManager extends WildEmitter {
         });
         this.expose.setIceServers(iceServers);
         return this.jingleJs.iceServers;
+      })
+      .catch((err) => {
+        this.logger.warn('Failed to fetch ice servers, retrying in 5 seconds', err);
+        setTimeout(() => {
+          this.refreshIceServers()
+            .catch(err => this.logger.warn('Failed to fetch ice servers on retry; will keep trying until success', err));
+        }, 5000);
+        return Promise.reject(err);
       });
   }
 
