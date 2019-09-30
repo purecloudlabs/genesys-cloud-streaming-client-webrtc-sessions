@@ -1,6 +1,6 @@
 {
   "name": "purecloud-streaming-client-webrtc-sessions",
-  "version": "7.2.26",
+  "version": "7.2.27",
   "description": "WebRTC Extensions for the PureCloud Streaming Client SDK",
   "main": "dist/webrtc-sessions.js",
   "pre-push": [
