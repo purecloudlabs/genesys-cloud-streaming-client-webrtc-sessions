@@ -19,7 +19,7 @@ webappPipeline {
     upsertCMStep = {
         sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
             sh('''
-                echo "no CM needed for internal ember addon"
+                echo "no CM needed for internal module"
                 # patch to prep for the next version
                 git tag v${VERSION}
                 git push --tags
