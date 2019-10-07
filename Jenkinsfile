@@ -18,17 +18,17 @@ webappPipeline {
 
     upsertCMStep = {
         sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
-            sh('''
+            sh("""
                 echo "no CM needed for internal module"
                 # patch to prep for the next version
-                git tag v${VERSION}
+                git tag v${version}
                 git push --tags
                 npm version patch --no-git-tag-version
                 git config user.email "purecloud-jenkins@ininica.com"
                 git config user.name "PureCloud Jenkins"
                 git commit -am "Prep next version"
                 git push origin HEAD:master
-            ''')
+            """)
         }
     }
 }
