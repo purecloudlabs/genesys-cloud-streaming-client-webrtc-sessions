@@ -13,7 +13,8 @@ webappPipeline {
     shouldDeployTest = { false }
     shouldTestProd = { false }
 
-    shouldTagOnRelease = { false }
+    // will add this back in
+    // shouldTagOnRelease = { false }
 
     buildStep = {
         sh('npm install && npm test && npm run build')
@@ -26,8 +27,6 @@ webappPipeline {
                 # patch to prep for the next version
                 git tag v${version}
                 npm version patch --no-git-tag-version
-                git config user.email "purecloud-jenkins@ininica.com"
-                git config user.name "PureCloud Jenkins"
                 git commit -am "Prep next version"
                 git push origin HEAD:master --tags
             """)
