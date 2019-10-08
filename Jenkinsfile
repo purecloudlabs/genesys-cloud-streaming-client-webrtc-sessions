@@ -18,9 +18,7 @@ webappPipeline {
     }
 
     upsertCMStep = {
-        sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
-            sh('echo "no CM needed for internal module"')
-        }
+        sh('echo "no CM needed for internal module"')
     }
 
     shouldTagOnRelease = { false }
