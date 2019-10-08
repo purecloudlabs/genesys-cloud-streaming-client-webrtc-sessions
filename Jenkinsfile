@@ -13,17 +13,21 @@ webappPipeline {
     shouldDeployTest = { false }
     shouldTestProd = { false }
 
-    // will add this back in
-    // shouldTagOnRelease = { false }
-
     buildStep = {
         sh('npm install && npm test && npm run build')
     }
 
     upsertCMStep = {
         sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
+            sh('echo "no CM needed for internal module"')
+        }
+    }
+
+    shouldTagOnRelease = { false }
+
+    postReleaseStep = {
+        sshagent(credentials: [constants.credentials.github.inin_dev_evangelists]) {
             sh("""
-                echo "no CM needed for internal module"
                 # patch to prep for the next version
                 git tag v${version}
                 npm version patch --no-git-tag-version
