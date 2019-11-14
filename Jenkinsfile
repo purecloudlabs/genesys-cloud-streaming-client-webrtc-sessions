@@ -6,7 +6,7 @@ webappPipeline {
     useArtifactoryRepo = false
     projectName = 'streaming-client-webrtc-sessions'
     manifest = directoryManifest('dist')
-    buildType = { env.BRANCH_NAME == 'master' ? 'MAINLINE' : 'CI' }
+    buildType = { env.BRANCH_NAME == 'master' ? 'MAINLINE' : 'FEATURE' }
     publishPackage = { 'dev' }
 
     shouldDeployDev = { true }

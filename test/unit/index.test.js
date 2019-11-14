@@ -787,8 +787,34 @@ test('acceptRtcSession should emit error if no session provided', t => {
   sessionManager.expose.acceptRtcSession({});
 });
 
-test('acceptRtcSession should emit message if session provided', t => {
-  t.plan(4);
+test('acceptRtcSession should emit a proceed message if session provided', t => {
+  t.plan(2);
+  const { sessionManager, sandbox } = beforeEach();
+  sessionManager.pendingSessions = {
+    session1: {
+      from: {
+        toString: () => {}
+      }
+    },
+    to: 'goingTo'
+  };
+  const emitObjects = [
+    {
+      event: 'send',
+      data: { to: undefined, proceed: { id: 'session1' } }
+    }
+  ];
+  let counter = 0;
+  sandbox.stub(sessionManager, 'emit').callsFake((event, data) => {
+    t.is(event, emitObjects[counter].event);
+    t.deepEqual(data, emitObjects[counter].data);
+    counter++;
+  });
+  sessionManager.expose.acceptRtcSession('session1');
+});
+
+test('rtcSessionAccepted should emit an accept message if session provided', t => {
+  t.plan(2);
   const { sessionManager, sandbox } = beforeEach();
   sessionManager.pendingSessions = {
     session1: {
@@ -802,10 +828,6 @@ test('acceptRtcSession should emit message if session provided', t => {
     {
       event: 'send',
       data: { to: 'theOneJidToRuleThemAll12345', accept: { id: 'session1' } }
-    },
-    {
-      event: 'send',
-      data: { to: undefined, proceed: { id: 'session1' } }
     }
   ];
   let counter = 0;
@@ -814,7 +836,7 @@ test('acceptRtcSession should emit message if session provided', t => {
     t.deepEqual(data, emitObjects[counter].data);
     counter++;
   });
-  sessionManager.expose.acceptRtcSession('session1');
+  sessionManager.expose.rtcSessionAccepted('session1');
 });
 
 test('rejectRtcSession should emit error if no session provided', t => {
