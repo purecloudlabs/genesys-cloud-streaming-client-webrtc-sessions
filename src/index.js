@@ -515,6 +515,16 @@ export default class JingleSessionManager extends WildEmitter {
         delete this.pendingSessions[sessionId];
       }.bind(this),
 
+      rtcSessionAccepted: function (sessionId) {
+        const accept = {
+          to: this.jid.bare,
+          accept: {
+            id: sessionId
+          }
+        };
+        this.emit('send', accept, true); // send as Message
+      }.bind(this),
+
       acceptRtcSession: function (sessionId) {
         const session = this.pendingSessions[sessionId];
         if (!session) {
@@ -524,13 +534,7 @@ export default class JingleSessionManager extends WildEmitter {
           );
           return;
         }
-        const accept = {
-          to: this.jid.bare,
-          accept: {
-            id: sessionId
-          }
-        };
-        this.emit('send', accept, true); // send as Message
+
         const proceed = {
           to: session.from.toString(),
           proceed: {
