@@ -366,6 +366,10 @@ export default class JingleSessionManager extends WildEmitter {
         this.on(event, handler);
       }.bind(this),
 
+      once: function (event, handler) {
+        this.once(event, handler);
+      }.bind(this),
+
       off: function (event, handler) {
         this.off(event, handler);
       }.bind(this),
@@ -431,7 +435,7 @@ export default class JingleSessionManager extends WildEmitter {
         if (opts.jid.match(/@conference/)) {
           let mediaDescriptions = session.propose.descriptions;
           if (mediaDescriptions.length === 0) {
-            mediaDescriptions = [ { media: 'listener' } ];
+            mediaDescriptions = [{ media: 'listener' }];
           }
 
           const Presence = this.client._stanzaio.stanzas.getPresence();
@@ -465,7 +469,7 @@ export default class JingleSessionManager extends WildEmitter {
         return session.propose.id;
       }.bind(this),
 
-      endRtcSessions: function (opts, reason = 'success', callback = () => {}) {
+      endRtcSessions: function (opts, reason = 'success', callback = () => { }) {
         if (typeof opts === 'function') {
           callback = opts;
           opts = { jid: null };
