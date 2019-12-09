@@ -29,12 +29,12 @@ const {
 const MOCK_JXT = {
   withDefinition (label, xmlns, fn) { fn(); },
   utils: {
-    attribute () {}
+    attribute () { }
   },
-  define () {},
-  extend () {},
-  extendPresence () {},
-  use () {},
+  define () { },
+  extend () { },
+  extendPresence () { },
+  use () { },
   getPresence: () => function (data) { this.data = data; }
 };
 
@@ -46,18 +46,18 @@ class MockStanzaIo extends WildEmitter {
       toString: () => jid + '/asdf',
       full: jid + '/asdf'
     };
-    this.disco = { addFeature () {} };
+    this.disco = { addFeature () { } };
     this.stanzas = MOCK_JXT;
   }
 
-  send () {}
-  getServices () {}
+  send () { }
+  getServices () { }
 }
 
 class MockClient {
   constructor (jid) {
     this._stanzaio = new MockStanzaIo(jid);
-    this.logger = { debug () {}, info () {}, warn () {}, error () {} };
+    this.logger = { debug () { }, info () { }, warn () { }, error () { } };
   }
 
   on () {
@@ -68,7 +68,7 @@ class MockClient {
 test.beforeEach(() => {
   try {
     global.window = global;
-  } catch (e) {}
+  } catch (e) { }
   global.window.RTCPeerConnection = global.RTCPeerConnection = MockRTCPeerConnection();
   global.window.MediaSession = global.MediaSession = MockMediaSession();
 });
@@ -104,14 +104,14 @@ test('screenstop stanza should be defined properly', t => {
 test('sessionManager should take in a client with a stanzaio property and clientOptions', t => {
   t.plan(1);
   const stanzaio = {
-    on () {},
-    disco: { addFeature () {} },
+    on () { },
+    disco: { addFeature () { } },
     stanzas: MOCK_JXT
   };
   const clientOptions = {
     iceServers: []
   };
-  const sessionManager = new SessionManager({ _stanzaio: stanzaio, on () {} }, clientOptions);
+  const sessionManager = new SessionManager({ _stanzaio: stanzaio, on () { } }, clientOptions);
   t.truthy(sessionManager);
 });
 
@@ -297,7 +297,7 @@ test('prepareSession should create a MediaDataSession when appropriate (rtp, dat
   sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
-    applicationTypes: [ 'rtp', 'datachannel' ]
+    applicationTypes: ['rtp', 'datachannel']
   });
   t.is(mediaSession.peerID, 'somebody@example.com');
   t.is(typeof mediaSession.getDataChannel, 'function');
@@ -308,7 +308,7 @@ test('prepareSession should not create a MediaSession when not appropriate (rtp)
   sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
-    applicationTypes: [ 'rtp' ]
+    applicationTypes: ['rtp']
   });
   t.is(mediaSession.peerID, 'somebody@example.com');
   t.is(typeof mediaSession.getDataChannel, 'undefined');
@@ -319,7 +319,7 @@ test('prepareSession should not create a MediaSession when not appropriate (none
   sessionManager.config.signalEndOfCandidates = true;
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
-    applicationTypes: [ ]
+    applicationTypes: []
   });
   t.is(mediaSession.peerID, 'somebody@example.com');
   t.is(typeof mediaSession.getDataChannel, 'undefined');
@@ -365,7 +365,7 @@ test('media session should emit connected event', t => {
   t.is(message.peerID, 'somebody@conference');
 
   sinon.spy(mediaSession, 'onIceEndOfCandidates');
-  sinon.stub(mediaSession, 'send').callsFake(() => {});
+  sinon.stub(mediaSession, 'send').callsFake(() => { });
   mediaSession.pc.pc.iceConnectionState = 'connected';
   mediaSession.pc.emit('iceConnectionStateChange');
   sinon.assert.notCalled(mediaSession.onIceEndOfCandidates);
@@ -528,7 +528,7 @@ test('createRtcSession should emit error if an exception occurs when creating Me
       offerToReceiveVideo: true
     },
     peerConnectionConstraints: {
-      optional: [ ]
+      optional: []
     }
   };
 
@@ -630,9 +630,9 @@ test('createRtcSession should addSession and start', t => {
 
 test('initiateRtcSession sends a presence for a conference', t => {
   const { sessionManager } = beforeEach();
-  sinon.stub(sessionManager.client._stanzaio, 'send').callsFake(() => {});
+  sinon.stub(sessionManager.client._stanzaio, 'send').callsFake(() => { });
   sessionManager.expose.initiateRtcSession({
-    stream: { getTracks: () => [ { kind: 'audio' }, { kind: 'video' } ] },
+    stream: { getTracks: () => [{ kind: 'audio' }, { kind: 'video' }] },
     mediaPurpose: 'screenRecording',
     jid: 'example@conference.test.com'
   });
@@ -688,10 +688,10 @@ test('initiateRtcSession sends a listener presence for a one:one', t => {
   sessionManager.on('send', stanza => {
     t.truthy(stanza.propose.id);
     pendingId = stanza.propose.id;
-    t.deepEqual(stanza.propose.descriptions, [ { media: 'audio' }, { media: 'video' } ]);
+    t.deepEqual(stanza.propose.descriptions, [{ media: 'audio' }, { media: 'video' }]);
   });
   sessionManager.expose.initiateRtcSession({
-    stream: { getTracks: () => [ { kind: 'audio' }, { kind: 'video' } ] },
+    stream: { getTracks: () => [{ kind: 'audio' }, { kind: 'video' }] },
     jid: 'example@test.com'
   });
   sinon.assert.notCalled(sessionManager.client._stanzaio.send);
@@ -708,7 +708,7 @@ test('endRtcSessions should call endAllSessions if no jid', t => {
 test('endRtcSessions should call endAllSessions if no jid with reason success by default', t => {
   const { sessionManager, sandbox } = beforeEach();
   sessionManager.jingleJs.endAllSessions = sandbox.stub();
-  sessionManager.expose.endRtcSessions({}, () => {}, () => {});
+  sessionManager.expose.endRtcSessions({}, () => { }, () => { });
   sinon.assert.called(sessionManager.jingleJs.endAllSessions);
   sinon.assert.calledWith(sessionManager.jingleJs.endAllSessions, 'success');
 });
@@ -793,7 +793,7 @@ test('acceptRtcSession should emit a proceed message if session provided', t => 
   sessionManager.pendingSessions = {
     session1: {
       from: {
-        toString: () => {}
+        toString: () => { }
       }
     },
     to: 'goingTo'
@@ -819,7 +819,7 @@ test('rtcSessionAccepted should emit an accept message if session provided', t =
   sessionManager.pendingSessions = {
     session1: {
       from: {
-        toString: () => {}
+        toString: () => { }
       }
     },
     to: 'goingTo'
@@ -888,7 +888,7 @@ test('requestStateDump should emit statedump', t => {
 
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
-    applicationTypes: [ ]
+    applicationTypes: []
   });
 
   sessionManager.expose.requestStateDump(mediaSession, requestId);
@@ -912,7 +912,7 @@ test('notifyScreenShareStart should emit screenstart', t => {
 
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
-    applicationTypes: [ ]
+    applicationTypes: []
   });
 
   sessionManager.expose.notifyScreenShareStart(mediaSession);
@@ -934,7 +934,7 @@ test('notifyScreenShareStop should emit screenstop', t => {
 
   const mediaSession = sessionManager.jingleJs.prepareSession({
     peerID: 'somebody@example.com',
-    applicationTypes: [ ]
+    applicationTypes: []
   });
 
   sessionManager.expose.notifyScreenShareStop(mediaSession);
@@ -968,7 +968,7 @@ test('exposeEvents should return an array of jingleEvents', t => {
 
 test('setIceServers and getIceServers cooperate', t => {
   const { sessionManager } = beforeEach();
-  const mockIceServers = [ { urls: [] } ];
+  const mockIceServers = [{ urls: [] }];
   sessionManager.expose.setIceServers(mockIceServers);
   t.is(sessionManager.jingleJs.iceServers, mockIceServers);
   t.is(sessionManager.expose.getIceServers(), mockIceServers);
@@ -976,8 +976,8 @@ test('setIceServers and getIceServers cooperate', t => {
 
 test('refreshIceServers will call getServices on stanzaio and setIceServers with the result', async t => {
   const { sessionManager, sandbox } = beforeEach();
-  const mockStunServers = [ { host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' } ];
-  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
+  const mockStunServers = [{ host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' }];
+  const mockTurnServers = [{ host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' }];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
       return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
@@ -1000,7 +1000,7 @@ test('refreshIceServers will call getServices on stanzaio and setIceServers with
 
 test('refreshIceServers will call itself again on failure', async t => {
   const { sessionManager, sandbox } = beforeEach();
-  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
+  const mockTurnServers = [{ host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' }];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
       return Promise.reject(new Error('Expected test error'));
@@ -1025,7 +1025,7 @@ test('refreshIceServers will call itself again on failure', async t => {
 test('refreshIceServers will reject with an error on failure', async t => {
   const { sessionManager, sandbox } = beforeEach();
   const expectedError = new Error('Expected test error');
-  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
+  const mockTurnServers = [{ host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' }];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
       return Promise.reject(expectedError);
@@ -1046,9 +1046,9 @@ test('refreshIceServers will reject with an error on failure', async t => {
 test('constructor will call refreshIceServers immediately if the client is connected', async t => {
   const { sandbox } = beforeEach();
   const client = new MockClient('somejid@example.com');
-  const mockStunServers = [ { host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' } ];
-  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
-  client.logger = { debug () {} };
+  const mockStunServers = [{ host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' }];
+  const mockTurnServers = [{ host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' }];
+  client.logger = { debug () { } };
   client.connected = true;
   sandbox.stub(client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
@@ -1071,9 +1071,9 @@ test('constructor will call refreshIceServers immediately if the client is conne
 
 test('constructor will call refreshIceServers when the client becomes connected', async t => {
   const { sessionManager, sandbox } = beforeEach();
-  const mockStunServers = [ { host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' } ];
+  const mockStunServers = [{ host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' }];
   // different than standard to test other code paths
-  const mockTurnServers = [ { host: 'asdf.example.com', transport: 'tcp', type: 'turn' } ];
+  const mockTurnServers = [{ host: 'asdf.example.com', transport: 'tcp', type: 'turn' }];
   sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
     if (type === 'stun') {
       return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
@@ -1092,11 +1092,12 @@ test('constructor will call refreshIceServers when the client becomes connected'
   });
 });
 
-test('on and off hook up to the session manager directly', t => {
-  t.plan(1);
+test('on, once, and off hook up to the session manager directly', t => {
+  t.plan(2);
   const { sessionManager } = beforeEach();
   const handler = () => t.pass();
   sessionManager.expose.on('someEvent', handler);
+  sessionManager.expose.once('someEvent', handler);
   sessionManager.emit('someEvent');
   sessionManager.expose.off('someEvent', handler);
 
