@@ -74,7 +74,7 @@ test.beforeEach(() => {
 });
 
 const beforeEach = function () {
-  const sandbox = sinon.sandbox.create();
+  const sandbox = sinon.createSandbox();
   const client = new MockClient('theOneJidToRuleThemAll12345');
   const sessionManager = new SessionManager(client);
   return { stanzaio: client._stanzaio, sessionManager, sandbox };
@@ -696,6 +696,56 @@ test('initiateRtcSession sends a listener presence for a one:one', t => {
   });
   sinon.assert.notCalled(sessionManager.client._stanzaio.send);
   t.truthy(sessionManager.pendingSessions[pendingId]);
+});
+
+test('initiateRtcSession adds a media description for \'audio\' when there is no stream object provided', t => {
+  const { sessionManager } = beforeEach();
+  const opts = {
+    provideAudio: { fake: 'data' }
+  };
+
+  const resultSessionId = sessionManager.expose.initiateRtcSession(opts);
+  const mediaDescriptions = sessionManager.pendingSessions[resultSessionId].propose.descriptions;
+  t.is(mediaDescriptions.length, 1);
+  t.true(mediaDescriptions[0].media === 'audio');
+});
+
+test('initiateRtcSession does not add a media description for \'audio\' when one already exists', t => {
+  const { sessionManager } = beforeEach();
+  const opts = {
+    stream: { getTracks: () => [ { kind: 'audio' }, { kind: 'video' } ] },
+    provideAudio: { fake: 'data' }
+  };
+
+  const resultSessionId = sessionManager.expose.initiateRtcSession(opts);
+  const mediaDescriptions = sessionManager.pendingSessions[resultSessionId].propose.descriptions;
+  const filteredDescriptions = mediaDescriptions.filter((description) => description.media === 'audio');
+  t.is(filteredDescriptions.length, 1);
+});
+
+test('initiateRtcSession adds a media description for \'video\' when there is no stream object provided', t => {
+  const { sessionManager } = beforeEach();
+  const opts = {
+    provideVideo: { fake: 'data' }
+  };
+
+  const resultSessionId = sessionManager.expose.initiateRtcSession(opts);
+  const mediaDescriptions = sessionManager.pendingSessions[resultSessionId].propose.descriptions;
+  t.is(mediaDescriptions.length, 1);
+  t.true(mediaDescriptions[0].media === 'video');
+});
+
+test('initiateRtcSession does not add a media description for \'video\' when one already exists', t => {
+  const { sessionManager } = beforeEach();
+  const opts = {
+    stream: { getTracks: () => [ { kind: 'audio' }, { kind: 'video' } ] },
+    provideVideo: { fake: 'data' }
+  };
+
+  const resultSessionId = sessionManager.expose.initiateRtcSession(opts);
+  const mediaDescriptions = sessionManager.pendingSessions[resultSessionId].propose.descriptions;
+  const filteredDescriptions = mediaDescriptions.filter((description) => description.media === 'video');
+  t.is(filteredDescriptions.length, 1);
 });
 
 test('endRtcSessions should call endAllSessions if no jid', t => {

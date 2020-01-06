@@ -425,14 +425,14 @@ export default class JingleSessionManager extends WildEmitter {
         }
 
         if (opts.provideVideo) {
-          const videoDescriptionAlreadyExists = session.propose.descriptions.filter(desciption => desciption.media === 'video').length > 1;
+          const videoDescriptionAlreadyExists = session.propose.descriptions.filter(desciption => desciption.media === 'video').length > 0;
           if (!videoDescriptionAlreadyExists) {
             session.propose.descriptions.push({ media: 'video' });
           }
         }
 
-        if (opts.profideAudio) {
-          const audioDescriptionAlreadyExists = session.propose.descriptions.filter(desciption => desciption.media === 'audio').length > 1;
+        if (opts.provideAudio) {
+          const audioDescriptionAlreadyExists = session.propose.descriptions.filter(desciption => desciption.media === 'audio').length > 0;
           if (!audioDescriptionAlreadyExists) {
             session.propose.descriptions.push({ media: 'audio' });
           }
