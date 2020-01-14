@@ -974,6 +974,52 @@ test('setIceServers and getIceServers cooperate', t => {
   t.is(sessionManager.expose.getIceServers(), mockIceServers);
 });
 
+test('refreshIceServers should not blow up if stun server list is empty', async t => {
+  const { sessionManager, sandbox } = beforeEach();
+  const mockTurnServers = [ { host: 'asdf.example.com', port: 3297, username: 'asdfk', password: 'qwerty', transport: 'udp', type: 'turn' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
+    if (type === 'stun') {
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: {} });
+    }
+    if (type === 'turn') {
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockTurnServers } });
+    }
+  });
+  sandbox.stub(sessionManager.expose, 'setIceServers');
+  await sessionManager.expose.refreshIceServers();
+  sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
+  console.warn(sessionManager.jingleJs.iceServers);
+  t.is(sessionManager.jingleJs.iceServers.length, 1);
+  t.deepEqual(sessionManager.jingleJs.iceServers.find(s => s.type === 'turn'), {
+    type: 'turn',
+    urls: `turn:asdf.example.com:3297`,
+    username: 'asdfk',
+    credential: 'qwerty'
+  });
+});
+
+test('refreshIceServers should not blow up if turn server list is empty', async t => {
+  const { sessionManager, sandbox } = beforeEach();
+  const mockStunServers = [ { host: 'asdf.example.com', port: 3297, transport: 'udp', type: 'stun' } ];
+  sandbox.stub(sessionManager.client._stanzaio, 'getServices').callsFake(function (jid, type) {
+    if (type === 'stun') {
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { services: mockStunServers } });
+    }
+    if (type === 'turn') {
+      return Promise.resolve({ to: 'asdf', from: 'qwery', services: { } });
+    }
+  });
+  sandbox.stub(sessionManager.expose, 'setIceServers');
+  await sessionManager.expose.refreshIceServers();
+  sinon.assert.calledTwice(sessionManager.client._stanzaio.getServices);
+  console.warn(sessionManager.jingleJs.iceServers);
+  t.is(sessionManager.jingleJs.iceServers.length, 1);
+  t.deepEqual(sessionManager.jingleJs.iceServers.find(s => s.type === 'stun'), {
+    type: 'stun',
+    urls: `stun:asdf.example.com:3297`
+  });
+});
+
 test('refreshIceServers will call getServices on stanzaio and setIceServers with the result', async t => {
   const { sessionManager, sandbox } = beforeEach();
   const mockStunServers = [ { host: 'asdf.exmple.com', port: 3297, transport: 'udp', type: 'stun' } ];

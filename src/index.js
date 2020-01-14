@@ -294,8 +294,8 @@ export default class JingleSessionManager extends WildEmitter {
 
     return Promise.all([turn, stun])
       .then((responses) => {
-        const turnServers = responses[0].services.services;
-        const stunServers = responses[1].services.services;
+        const turnServers = responses[0].services.services || [];
+        const stunServers = responses[1].services.services || [];
         this.logger.debug('STUN/TURN server discovery result', { turnServers, stunServers });
         const iceServers = [...turnServers, ...stunServers].map(service => {
           const ice = { type: service.type };
