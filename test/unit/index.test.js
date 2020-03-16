@@ -914,18 +914,18 @@ test('rejectRtcSession will send two reject messages', t => {
   sessionManager.pendingSessions.asdf = { from: 'someone-else@test.com' };
   sessionManager.expose.rejectRtcSession('asdf');
   sinon.assert.calledTwice(sessionManager.emit);
-  sessionManager.emit.firstCall.calledWith({
+  t.true(sessionManager.emit.firstCall.calledWith('send', {
     to: sessionManager.jid.bare,
     reject: {
       id: 'asdf'
     }
-  });
-  sessionManager.emit.secondCall.calledWith({
+  }, true));
+  t.true(sessionManager.emit.secondCall.calledWith('send', {
     to: 'someone-else@test.com',
     reject: {
       id: 'asdf'
     }
-  });
+  }, true));
 
   t.is(typeof sessionManager.pendingSessions.asdf, 'undefined');
 });
@@ -942,10 +942,10 @@ test('requestStateDump should emit statedump', t => {
   });
 
   sessionManager.expose.requestStateDump(mediaSession, requestId);
-
-  sessionManager.emit.firstCall.calledWith({
-    to: `${mediaSession.peerID}`,
+  t.true(sessionManager.emit.firstCall.calledWith('send', {
+    to: mediaSession.peerID,
     from: sessionManager.jid.bare,
+    type: 'set',
     jingle: {
       action: 'session-info',
       sid: mediaSession.sid,
@@ -953,7 +953,7 @@ test('requestStateDump should emit statedump', t => {
         requestId
       }
     }
-  });
+  }));
 });
 
 test('notifyScreenShareStart should emit screenstart', t => {
@@ -967,15 +967,16 @@ test('notifyScreenShareStart should emit screenstart', t => {
 
   sessionManager.expose.notifyScreenShareStart(mediaSession);
 
-  sessionManager.emit.firstCall.calledWith({
-    to: `${mediaSession.peerID}`,
-    from: sessionManager.jid.bare,
+  t.true(sessionManager.emit.firstCall.calledWith('send', {
+    to: mediaSession.peerID,
+    from: sessionManager.jid.full,
+    type: 'set',
     jingle: {
       action: 'session-info',
       sid: mediaSession.sid,
       screenstart: {}
     }
-  });
+  }));
 });
 
 test('notifyScreenShareStop should emit screenstop', t => {
@@ -989,15 +990,16 @@ test('notifyScreenShareStop should emit screenstop', t => {
 
   sessionManager.expose.notifyScreenShareStop(mediaSession);
 
-  sessionManager.emit.firstCall.calledWith({
-    to: `${mediaSession.peerID}`,
-    from: sessionManager.jid.bare,
+  t.true(sessionManager.emit.firstCall.calledWith('send', {
+    to: mediaSession.peerID,
+    from: sessionManager.jid.full,
+    type: 'set',
     jingle: {
       action: 'session-info',
       sid: mediaSession.sid,
       screenstop: {}
     }
-  });
+  }));
 });
 
 /* Exposed Methods on the extension */

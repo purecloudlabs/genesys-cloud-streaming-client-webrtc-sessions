@@ -611,7 +611,7 @@ export default class JingleSessionManager extends WildEmitter {
       notifyScreenShareStart: function (session) {
         this.emit('send', {
           to: `${session.peerID}`,
-          from: this.jid.bare,
+          from: this.client._stanzaio.jid.full,
           type: 'set',
           jingle: {
             action: 'session-info',
@@ -624,7 +624,7 @@ export default class JingleSessionManager extends WildEmitter {
       notifyScreenShareStop: function (session) {
         this.emit('send', {
           to: `${session.peerID}`,
-          from: this.jid.bare,
+          from: this.client._stanzaio.jid.full,
           type: 'set',
           jingle: {
             action: 'session-info',
