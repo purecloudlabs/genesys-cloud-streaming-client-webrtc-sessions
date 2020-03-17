@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "build": "webpack && webpack --env.production",
-    "unit-test": "NODE_ENV=test nyc --reporter=lcov --reporter=cobertura ava test/unit/*.js",
+    "unit-test": "NODE_ENV=test nyc --reporter=lcov --serial --reporter=cobertura ava test/unit/*.js",
     "test": "semistandard && npm run unit-test && npm run report",
     "semistandard": "semistandard",
     "semistandard:fix": "semistandard --fix",
@@ -53,6 +53,7 @@
     "require": [
       "esm",
       "@babel/register",
+      "babel-polyfill",
       "./test/helpers/setup-browser-env.js"
     ]
   },
@@ -97,7 +98,7 @@
     "@babel/core": "^7.5.4",
     "@babel/preset-env": "^7.5.4",
     "@babel/register": "^7.4.4",
-    "ava": "^2.4.0",
+    "ava": "^3.5.0",
     "babel-loader": "^8.0.6",
     "babel-plugin-istanbul": "^5.1.1",
     "babel-polyfill": "^6.26.0",
