@@ -690,13 +690,15 @@ export default class JingleSessionManager extends WildEmitter {
         }
         this.pendingSessions[stanza.propose.id] = stanza;
         const roomJid = (stanza.ofrom && stanza.ofrom.full) || stanza.from.full || stanza.from;
+        const fromJid = stanza.from.full || stanza.from;
         return this.emit(events.REQUEST_INCOMING_RTCSESSION, {
           sessionId: stanza.propose.id,
           conversationId: raw.propose.xml.attrs['inin-cid'],
+          originalRoomJid: raw.propose.xml.attrs['inin-ofrom'] || fromJid,
           autoAnswer: raw.propose.xml.attrs['inin-autoanswer'] === 'true',
           persistentConnectionId: raw.propose.xml.attrs['inin-persistent-cid'],
           roomJid,
-          fromJid: stanza.from.full || stanza.from
+          fromJid
         });
       }.bind(this),
 
