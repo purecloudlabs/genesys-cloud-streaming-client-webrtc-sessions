@@ -372,7 +372,7 @@ test('media session should emit connected event', t => {
   sinon.assert.calledOnce(mediaSession.send);
 });
 
-test('message stanzas should check a stanza and handle it', t => {
+test('jingleMessageInit | message stanzas should check a stanza and handle it', t => {
   const stanza = `
     <message xmlns="jabber:client"
               from="example-number@gjoll.us-east-1.inindca.com/a2b41aaf-23da-4166-9e05-37d1d2018565"
@@ -398,7 +398,7 @@ test('message stanzas should check a stanza and handle it', t => {
   sinon.assert.calledOnce(sessionManager.stanzaHandlers.jingleMessageInit);
 });
 
-test('non message stanzas should not be checked or handled handle it', t => {
+test('jingleMessageInit | non message stanzas should not be checked or handled handle it', t => {
   const stanza = `
     <iq xmlns="jabber:client"
               from="example-number@gjoll.us-east-1.inindca.com/a2b41aaf-23da-4166-9e05-37d1d2018565"
@@ -1265,7 +1265,7 @@ test('jingle should attach the pendingIq jingle data before processing for an er
   sinon.assert.calledWith(sessionManager.jingleJs.process, stanzaData);
 });
 
-test('jingleMessageInit should return without emitting an event if it is from another client of the same user', t => {
+test('jingleMessageInit | should return without emitting an event if it is from another client of the same user', t => {
   const { sessionManager } = beforeEach();
   sinon.stub(sessionManager, 'emit');
   const stanzaData = jingleMessageInitStanza.toJSON();
@@ -1279,14 +1279,13 @@ test('jingleMessageInit should return without emitting an event if it is from an
   sinon.assert.notCalled(sessionManager.emit);
 });
 
-test('jingleMessageInit should emit message', t => {
+test('jingleMessageInit | should emit message and default the originalRoomJid', t => {
   const { sessionManager, sandbox } = beforeEach();
   t.plan(0);
   sandbox.stub(sessionManager, 'emit');
   const propose = jingleStanza.getMessageXml({
     'id': 'mmsageInit1',
     'from': 'romeo@montague.lit',
-    'ofrom': 'o art thou',
     'to': 'juliet@capulet.com',
     'propose': {
       'id': 'proposeId1'
@@ -1301,12 +1300,41 @@ test('jingleMessageInit should emit message', t => {
     conversationId: undefined,
     autoAnswer: false,
     persistentConnectionId: undefined,
-    roomJid: 'o art thou',
-    fromJid: 'o art thou'
+    roomJid: 'romeo@montague.lit',
+    fromJid: 'romeo@montague.lit',
+    originalRoomJid: 'romeo@montague.lit'
   });
 });
 
-test('jingleMessageInit should emit message with a different from address', t => {
+test('jingleMessageInit | should emit message with a different originalRoomJid', t => {
+  const { sessionManager, sandbox } = beforeEach();
+  t.plan(0);
+  sandbox.stub(sessionManager, 'emit');
+  const propose = jingleStanza.getMessageXml({
+    'id': 'mmsageInit1',
+    'from': 'peer-123-456@conference.montague.lit',
+    'to': 'juliet@capulet.com',
+    'propose': {
+      'id': 'proposeId1'
+    }
+  });
+  propose.propose.xml.attrs['inin-autoanswer'] = 'false';
+  propose.propose.xml.attrs['inin-ofrom'] = 'peer-abc-def@conference.montague.lit';
+  const stanzaData = propose.toJSON();
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, propose);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.REQUEST_INCOMING_RTCSESSION, {
+    sessionId: 'proposeId1',
+    conversationId: undefined,
+    autoAnswer: false,
+    persistentConnectionId: undefined,
+    roomJid: 'peer-123-456@conference.montague.lit',
+    fromJid: 'peer-123-456@conference.montague.lit',
+    originalRoomJid: 'peer-abc-def@conference.montague.lit'
+  });
+});
+
+test('jingleMessageInit | should emit message with a different from address', t => {
   t.plan(0);
   const { sessionManager, sandbox } = beforeEach();
   sandbox.stub(sessionManager, 'emit');
@@ -1321,8 +1349,6 @@ test('jingleMessageInit should emit message with a different from address', t =>
   });
   propose.propose.xml.attrs['inin-autoanswer'] = 'true';
   const stanzaData = propose.toJSON();
-  stanzaData.from = 'o art thou';
-  stanzaData.ofrom = null;
   sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, propose);
   sinon.assert.calledOnce(sessionManager.emit);
   sinon.assert.calledWith(sessionManager.emit, events.REQUEST_INCOMING_RTCSESSION, {
@@ -1331,7 +1357,8 @@ test('jingleMessageInit should emit message with a different from address', t =>
     autoAnswer: true,
     persistentConnectionId: undefined,
     roomJid: 'o art thou',
-    fromJid: 'o art thou'
+    fromJid: 'o art thou',
+    originalRoomJid: 'o art thou'
   });
 });
 
