@@ -697,6 +697,7 @@ export default class JingleSessionManager extends WildEmitter {
           originalRoomJid: raw.propose.xml.attrs['inin-ofrom'] || fromJid,
           autoAnswer: raw.propose.xml.attrs['inin-autoanswer'] === 'true',
           persistentConnectionId: raw.propose.xml.attrs['inin-persistent-cid'],
+          fromUserId: raw.propose.xml.attrs['inin-user-id'],
           roomJid,
           fromJid
         });

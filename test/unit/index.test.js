@@ -1300,7 +1300,37 @@ test('jingleMessageInit | should emit message and default the originalRoomJid', 
     conversationId: undefined,
     autoAnswer: false,
     persistentConnectionId: undefined,
+    fromUserId: undefined,
     roomJid: 'romeo@montague.lit',
+    fromJid: 'romeo@montague.lit',
+    originalRoomJid: 'romeo@montague.lit'
+  });
+});
+
+test('jingleMessageInit | should emit message and get inin-user-id', t => {
+  const { sessionManager, sandbox } = beforeEach();
+  t.plan(0);
+  sandbox.stub(sessionManager, 'emit');
+  const propose = jingleStanza.getMessageXml({
+    'id': 'mmsageInit1',
+    'from': 'romeo@montague.lit',
+    'to': 'juliet@capulet.com',
+    'propose': {
+      'id': 'proposeId1'
+    }
+  });
+  propose.propose.xml.attrs['inin-autoanswer'] = 'false';
+  propose.propose.xml.attrs['inin-user-id'] = 'my-user-id';
+  const stanzaData = propose.toJSON();
+  sessionManager.stanzaHandlers.jingleMessageInit(stanzaData, propose);
+  sinon.assert.calledOnce(sessionManager.emit);
+  sinon.assert.calledWith(sessionManager.emit, events.REQUEST_INCOMING_RTCSESSION, {
+    sessionId: 'proposeId1',
+    conversationId: undefined,
+    autoAnswer: false,
+    persistentConnectionId: undefined,
+    roomJid: 'romeo@montague.lit',
+    fromUserId: 'my-user-id',
     fromJid: 'romeo@montague.lit',
     originalRoomJid: 'romeo@montague.lit'
   });
@@ -1329,6 +1359,7 @@ test('jingleMessageInit | should emit message with a different originalRoomJid',
     autoAnswer: false,
     persistentConnectionId: undefined,
     roomJid: 'peer-123-456@conference.montague.lit',
+    fromUserId: undefined,
     fromJid: 'peer-123-456@conference.montague.lit',
     originalRoomJid: 'peer-abc-def@conference.montague.lit'
   });
@@ -1358,6 +1389,7 @@ test('jingleMessageInit | should emit message with a different from address', t 
     persistentConnectionId: undefined,
     roomJid: 'o art thou',
     fromJid: 'o art thou',
+    fromUserId: undefined,
     originalRoomJid: 'o art thou'
   });
 });
