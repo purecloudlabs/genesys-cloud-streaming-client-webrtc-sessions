@@ -1,4 +1,7 @@
-# PureCloud Streaming Client WebRTC Sessions
+# Genesys cloud Streaming Client WebRTC Sessions
+
+## Breaking Change
+As of version 8.x, purecloud-streaming-client-webrtc-sessions has been renamed to genesys-cloud-streaming-client-webrtc-sessions
 
 ## Overview
 

@@ -1,7 +1,7 @@
 {
-  "name": "purecloud-streaming-client-webrtc-sessions",
-  "version": "7.2.81",
-  "description": "WebRTC Extensions for the PureCloud Streaming Client SDK",
+  "name": "genesys-cloud-streaming-client-webrtc-sessions",
+  "version": "8.0.0",
+  "description": "WebRTC Extensions for the Genesys Cloud Streaming Client SDK",
   "main": "dist/webrtc-sessions.js",
   "pre-push": [
     "test"

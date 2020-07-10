@@ -1,4 +1,4 @@
-# PureCloud Streaming Client WebRTC Sessions Extension
+# Genesys Cloud Streaming Client WebRTC Sessions Extension
 
 This extension for the streaming client supports receiving inbound and outbound
 WebRTC Softphone audio sessions. The API is used in conjunction with the public
@@ -75,7 +75,7 @@ Alice                     PubSub Extension    webrtcSessions
 After creating an instance of the streaming client, your client can add event handlers for
 incoming sessions (for inbound or outbound calls). `requestIncomingRtcSession` is an example
 of an webrtcSessions event. You can answer and control sessions via the methods documented
-below. Most call control actions, however, should be done via the PureCloud Public
+below. Most call control actions, however, should be done via the Genesys Cloud Public
 API (or the Public API javascript SDK).
 
 Once the client has a session, it can add event handlers for lower level control
