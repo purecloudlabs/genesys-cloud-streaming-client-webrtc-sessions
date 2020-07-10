@@ -13,7 +13,7 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, 'dist'),
       filename: minimize ? 'webrtc-sessions.min.js' : 'webrtc-sessions.js',
-      library: 'PureCloudStreamingClientWebrtcSessions',
+      library: 'GenesysCloudStreamingClientWebrtcSessions',
       libraryTarget: 'umd',
       libraryExport: 'default'
     },
