@@ -1,6 +1,6 @@
 {
   "name": "genesys-cloud-streaming-client-webrtc-sessions",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "description": "WebRTC Extensions for the Genesys Cloud Streaming Client SDK",
   "main": "dist/webrtc-sessions.js",
   "pre-push": [
@@ -8,8 +8,7 @@
   ],
   "files": [
     "src",
-    "dist/webrtc-sessions.js",
-    "dist/webrtc-sessions.js.map"
+    "dist"
   ],
   "scripts": {
     "build": "webpack && webpack --env.production",
@@ -112,6 +111,7 @@
     "sinon": "^7.5.0",
     "watch": "^1.0.2",
     "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.5"
+    "webpack-cli": "^3.3.5",
+    "webpack-node-externals": "^2.5.0"
   }
 }
