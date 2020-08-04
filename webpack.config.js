@@ -4,7 +4,7 @@ const nodeExternals = require('webpack-node-externals');
 module.exports = (env) => {
   const minimize = env && env.production;
   return {
-    target: 'node',
+    target: 'web',
     entry: './src/index.js',
     devtool: 'source-map',
     mode: minimize ? 'production' : 'development',
