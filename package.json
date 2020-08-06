@@ -1,6 +1,6 @@
 {
   "name": "genesys-cloud-streaming-client-webrtc-sessions",
-  "version": "8.0.1",
+  "version": "8.0.2",
   "description": "WebRTC Extensions for the Genesys Cloud Streaming Client SDK",
   "main": "dist/webrtc-sessions.js",
   "pre-push": [
@@ -84,7 +84,7 @@
   "homepage": "https://github.com/purecloudlabs/purecloud-streaming-client-webrtc-sessions#readme",
   "dependencies": {
     "jingle-media-data-session-purecloud": "^3.0.0",
-    "jingle-media-session-purecloud": "^3.3.4",
+    "jingle-media-session-purecloud": "^3.3.5",
     "jingle-purecloud": "^4.0.0",
     "jingle-stanza": "^2.0.2",
     "limiter": "^1.1.2",
